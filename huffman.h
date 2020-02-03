@@ -21,7 +21,8 @@ struct htTree {
 //The Huffman table nodes (linked list implementation)
 struct hlNode {
     char symbol;
-    char* code;
+    char code;
+    int size;
     struct hlNode* next;
 };
 
@@ -33,5 +34,5 @@ struct hlTable {
 
 htTree* buildTree(const QString& inputString);
 hlTable* buildTable(htTree* huffmanTree);
-QString encode(hlTable* table, const char* stringToEncode);
-QString decode(htTree* tree, const char* stringToDecode);
+QByteArray encode(hlTable* table, const QString& stringToEncode);
+QString decode(htTree* tree, const QByteArray& stringToDecode);

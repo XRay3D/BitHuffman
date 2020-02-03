@@ -91,16 +91,18 @@ MainWindow::MainWindow(QWidget* parent)
         "Декабрь",
     });
     try {
+
+        QString testStr("beep boop beer!");
         //We build the tree depending on the string
-        htTree* codeTree = buildTree("beep boop beer!");
+        htTree* codeTree = buildTree(testStr);
         //We build the table depending on the Huffman tree
         hlTable* codeTable = buildTable(codeTree);
 
         //We encode using the Huffman table
-        encode(codeTable, "beep boop beer!");
+        //encode(codeTable, testStr);
         //We decode using the Huffman tree
         //We can decode string that only use symbols from the initial string
-        decode(codeTree, "0011111010110001001010101100111110001001");
+        decode(codeTree, encode(codeTable, testStr) /*"0011111010110001001010101100111110001001"*/);
         //Output : 0011 1110 1011 0001 0010 1010 1100 1111 1000 1001
     } catch (...) {
         qDebug() << "err";
