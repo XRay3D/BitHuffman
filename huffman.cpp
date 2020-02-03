@@ -55,38 +55,37 @@ hlTable* buildTable(htTree* huffmanTree)
     return table;
 }
 
-htTree* buildTree(const char* inputString)
+htTree* buildTree(const QString& inputString)
 {
     //The array in which we calculate the frequency of the symbols
     //Knowing that there are only 256 posibilities of combining 8 bits
     //(256 ASCII characters)
-    int* probability = (int*)malloc(sizeof(int) * 256);
+    int probability[256];
 
     //We initialize the array
     for (int i = 0; i < 256; i++)
         probability[i] = 0;
 
     //We consider the symbol as an array index and we calculate how many times each symbol appears
-    for (int i = 0; inputString[i] != '\0'; i++)
-        probability[(unsigned char)inputString[i]]++;
+
+    for (int i = 0; i < inputString.size(); i++)
+        probability[static_cast<unsigned char>(inputString[i].toLatin1())]++;
 
     //The queue which will hold the tree nodes
     pQueue* huffmanQueue;
     initPQueue(&huffmanQueue);
 
     //We create nodes for each symbol in the string
-    for (int i = 0; i < 256; i++)
+    for (int i = 0; i < 256; i++) {
         if (probability[i] != 0) {
-            htNode* aux = (htNode*)malloc(sizeof(htNode));
+            htNode* aux = static_cast<htNode*>(malloc(sizeof(htNode)));
             aux->left = nullptr;
             aux->right = nullptr;
-            aux->symbol = (char)i;
+            aux->symbol = static_cast<char>(i);
 
             addPQueue(&huffmanQueue, aux, probability[i]);
         }
-
-    //We free the array because we don't need it anymore
-    free(probability);
+    }
 
     //We apply the steps described in the article to build the tree
     while (huffmanQueue->size != 1) {

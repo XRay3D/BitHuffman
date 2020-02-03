@@ -3,10 +3,10 @@
 #pragma once
 
 //The Huffman tree node definition
-typedef struct _htNode {
+struct htNode {
     char symbol;
-    struct _htNode *left, *right;
-} htNode;
+    struct htNode *left, *right;
+};
 
 /*
 	We "encapsulate" the entire tree in a structure
@@ -14,24 +14,24 @@ typedef struct _htNode {
 	if we need to. This way we don't have to modify the entire
 	source code.
 */
-typedef struct _htTree {
+struct htTree {
     htNode* root;
-} htTree;
+};
 
 //The Huffman table nodes (linked list implementation)
-typedef struct _hlNode {
+struct hlNode {
     char symbol;
     char* code;
-    struct _hlNode* next;
-} hlNode;
+    struct hlNode* next;
+};
 
 //Incapsularea listei
-typedef struct _hlTable {
+struct hlTable {
     hlNode* first;
     hlNode* last;
-} hlTable;
+};
 
-htTree* buildTree(const char* inputString);
+htTree* buildTree(const QString& inputString);
 hlTable* buildTable(htTree* huffmanTree);
 QString encode(hlTable* table, const char* stringToEncode);
 QString decode(htTree* tree, const char* stringToDecode);
