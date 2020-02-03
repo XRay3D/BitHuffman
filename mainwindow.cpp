@@ -99,15 +99,24 @@ MainWindow::MainWindow(QWidget* parent)
         hlTable* codeTable = buildTable(codeTree);
 
         //We encode using the Huffman table
-        //encode(codeTable, testStr);
+        encode(codeTable, testStr);
         //We decode using the Huffman tree
         //We can decode string that only use symbols from the initial string
-        decode(codeTree, encode(codeTable, testStr) /*"0011111010110001001010101100111110001001"*/);
+        decode(codeTree, /*encode(codeTable, testStr) */ "0011111010110001001010101100111110001001");
         //Output : 0011 1110 1011 0001 0010 1010 1100 1111 1000 1001
+        /*
+        00111110
+        10110001
+        00101010
+        11001111
+        10001001
+        */
+
     } catch (...) {
         qDebug() << "err";
         exit(0);
     }
+    exit(0);
 }
 
 MainWindow::~MainWindow()
