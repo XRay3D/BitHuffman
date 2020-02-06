@@ -3,6 +3,8 @@
 
 #include <QMainWindow>
 
+#include <types.h>
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -14,14 +16,16 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow(QWidget* parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
 private slots:
-    void on_pbToSerNum_clicked();
-
-    void on_pbFromSerNum_clicked();
+    void on_pbGen_clicked();
 
 private:
     Ui::MainWindow* ui;
+    bool skip = false;
+
+    void toSerNum();
+    void fromSerNum();
 };
 #endif // MAINWINDOW_H

@@ -1,8 +1,10 @@
 #include "mainwindow.h"
-#include "huffman.h"
+#include "model.h"
 #include "ui_mainwindow.h"
-#include <QDebug>
-#include <stdint.h>
+
+#include <QClipboard>
+#include <QContextMenuEvent>
+#include <QMenu>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -10,113 +12,37 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    ui->comboBox_r->addItems({
-        "Иванов",
-        "Смирнов",
-        "Кузнецов",
-        "Попов",
-        "Васильев",
-        "Петров",
-        "Соколов",
-        "Михайлов",
-        "Новиков",
-        "Федоров",
-        "Морозов",
-        "Волков",
-        "Алексеев",
-        "Лебедев",
-        "Семенов",
-        "Егоров",
-        "Павлов",
-        "Козлов",
-        "Степанов",
-        "Николаев",
-        "Орлов",
-        "Андреев",
-        "Макаров",
-        "Никитин",
-        "Захаров",
-        "Зайцев",
-        "Соловьев",
-        "Борисов",
-        "Яковлев",
-        "Григорьев",
-        "Романов",
-        "Воробьев",
-        "Сергеев",
-        "Кузьмин",
-        "Фролов",
-        "Александров",
-        "Дмитриев",
-        "Королев",
-        "Гусев",
-        "Киселев",
-        "Ильин",
-        "Максимов",
-        "Поляков",
-        "Сорокин",
-        "Виноградов",
-        "Ковалев",
-        "Белов",
-        "Медведев",
-        "Антонов",
-        "Тарасов",
-        "Жуков",
-        "Баранов",
-        "Филиппов",
-        "Комаров",
-        "Давыдов",
-        "Беляев",
-        "Герасимов",
-        "Богданов",
-        "Осипов",
-        "Сидоров",
-        "Матвеев",
-        "Титов",
-        "Марков",
-        "Миронов",
+    Regul::load(ui->cbxRegul);
+
+    connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromSerNum);
+
+    connect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toSerNum);
+    connect(ui->cbxRegul, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::toSerNum);
+    connect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toSerNum);
+
+    ui->tableView->setModel(new Model(ui->tableView));
+    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Stretch);
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+
+    ui->tableView->installEventFilter(this);
+
+    connect(ui->tableView, &QTableView::customContextMenuRequested, [this](const QPoint& pos) {
+        QMenu menu;
+        //        menu.addAction("Печать", [this] {
+        //        });
+        menu.addAction("Копировать", [this] {
+            QClipboard* clipboard = QGuiApplication::clipboard();
+            QString text;
+            for (auto& index : ui->tableView->selectionModel()->selectedRows()) {
+                text += Model::getRecord(index.row()).toString();
+            }
+            clipboard->setText(text);
+        });
+        menu.exec(ui->tableView->mapToGlobal(pos));
     });
-    ui->comboBox_m->addItems({
-        "Январь",
-        "Февраль",
-        "Март",
-        "Апрель",
-        "Май",
-        "Июнь",
-        "Июль",
-        "Август",
-        "Сентябрь",
-        "Октябрь",
-        "Ноябрь",
-        "Декабрь",
-    });
-    try {
-
-        QString testStr("beep boop beer!");
-        //We build the tree depending on the string
-        htTree* codeTree = buildTree(testStr);
-        //We build the table depending on the Huffman tree
-        hlTable* codeTable = buildTable(codeTree);
-
-        //We encode using the Huffman table
-        encode(codeTable, testStr);
-        //We decode using the Huffman tree
-        //We can decode string that only use symbols from the initial string
-        decode(codeTree, /*encode(codeTable, testStr) */ "0011111010110001001010101100111110001001");
-        //Output : 0011 1110 1011 0001 0010 1010 1100 1111 1000 1001
-        /*
-        00111110
-        10110001
-        00101010
-        11001111
-        10001001
-        */
-
-    } catch (...) {
-        qDebug() << "err";
-        exit(0);
-    }
-    exit(0);
+    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+    toSerNum();
 }
 
 MainWindow::~MainWindow()
@@ -124,55 +50,45 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-//#pragma pack(push, 1)
-//struct name {
-//    union U {
-//        struct {
-//            unsigned regul : 6;
-//            unsigned month : 4;
-//            unsigned yar : 3;
-//            unsigned serNun : 11;
-//            unsigned a : 8;
-//        } str;
-//        int32_t raw;
-//    } u;
-//};
-//#pragma pack(pop, 1)
-
-void MainWindow::on_pbToSerNum_clicked()
+void MainWindow::toSerNum()
 {
-    //    qDebug() << sizeof(name);
-    //    name n;
-    //    memset(&n, 0, sizeof(name));
-    //    n.u.str.yar = ui->spinBox_y->value();
-    //    n.u.str.regul = ui->comboBox->currentIndex();
-    //    n.u.str.month = ui->comboBox_2->currentIndex();
-    //    n.u.str.serNun = ui->spinBox_s->value() - 1;
-    //    ui->spinBox_r->setValue(n.u.raw);
+    disconnect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromSerNum);
 
-    int yar = ui->spinBox_y->value() << 11;
-    int regul = ui->comboBox_r->currentIndex() << 18;
-    int month = ui->comboBox_m->currentIndex() << 14;
-    int serNun = (ui->spinBox_s->value() - 1);
+    ui->sbxSerNumCoded->setValue(
+        Record::toSerNum(Regul::fromIndex(ui->cbxRegul->currentIndex()).id,
+            ui->dateEdit->date(),
+            ui->sbxSerNum->value()));
 
-    ui->spinBox_r->setValue(yar | regul | month | serNun);
+    connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromSerNum);
 }
 
-void MainWindow::on_pbFromSerNum_clicked()
+void MainWindow::fromSerNum()
 {
-    //    qDebug() << sizeof(name);
-    //    name n;
-    //    memset(&n, 0, sizeof(name));
-    //    n.u.raw = ui->spinBox_r->value();
-    //    ui->spinBox_y->setValue(n.u.str.yar);
-    //    ui->comboBox->setCurrentIndex(n.u.str.regul);
-    //    ui->comboBox_2->setCurrentIndex(n.u.str.month);
-    //    ui->spinBox_s->setValue(n.u.str.serNun + 1);
+    disconnect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toSerNum);
+    disconnect(ui->cbxRegul, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::toSerNum);
+    disconnect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toSerNum);
 
-    int raw = ui->spinBox_r->value();
+    auto [regId, date, serNum] = Record::fromSerNum(ui->sbxSerNumCoded->value());
+    ui->dateEdit->setDate(date);
+    ui->cbxRegul->setCurrentIndex(Regul::toIndex(regId));
+    ui->sbxSerNum->setValue(serNum);
 
-    ui->spinBox_y->setValue((raw >> 11) & 0b111);
-    ui->comboBox_r->setCurrentIndex((raw >> 18) & 0b111111);
-    ui->comboBox_m->setCurrentIndex((raw >> 14) & 0b1111);
-    ui->spinBox_s->setValue((raw & 0b11111111111) + 1);
+    ui->tableView->selectRow(Model::getIndex(ui->sbxSerNumCoded->value()));
+    ui->tableView->showRow(Model::getIndex(ui->sbxSerNumCoded->value()));
+
+    connect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toSerNum);
+    connect(ui->cbxRegul, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::toSerNum);
+    connect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toSerNum);
+}
+
+void MainWindow::on_pbGen_clicked()
+{
+    toSerNum();
+    Model::addRecord({ //
+        Regul::fromIndex(ui->cbxRegul->currentIndex()),
+        ui->dateEdit->date(),
+        ui->sbxSerNum->value(),
+        ui->sbxSerNum_2->value(),
+        ui->sbxOrder->value(),
+        ui->dteOrder->date() });
 }

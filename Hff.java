@@ -442,6 +442,7 @@ public class Main {
                 compressed += String.format("%8s", Integer.toBinaryString(b & 0xff)).replace(" ", "0");
             }
         } catch (EOFException e) {
+
         }
 
         //--------------------
@@ -457,6 +458,7 @@ public class Main {
                 encodingArray[(byte)s.charAt(0)] = s.substring(1, s.length());
             }
         } catch (EOFException ignore) {
+
         }
 
         extractedFile.createNewFile();

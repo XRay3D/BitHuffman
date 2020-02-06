@@ -7,40 +7,36 @@
 #include "huffman.h"
 #include "pQueue.h"
 
-void traverseTree(htNode* treeNode, hlTable** table, int k, char code);
+void traverseTree(htNode* treeNode, hlTable*& table, int k, uchar code);
 
-void traverseTree(htNode* treeNode, hlTable** table, int k, char code)
+void traverseTree(htNode* treeNode, hlTable*& table, int k, uchar code)
 {
     //If we reach the end we introduce the code in the table
     if (treeNode->left == nullptr && treeNode->right == nullptr) {
-        //qDebug() << "k" << k << static_cast<int>(code);
-        //        code[k] = '\0';
-        hlNode* aux = static_cast<hlNode*>(malloc(sizeof(hlNode)));
-        //        aux->code = (char*)malloc(sizeof(char) * (strlen(code) + 1));
-        //        strcpy(aux->code, code);
+        hlNode* aux = new hlNode;
+        qDebug() << QString("%1").arg(code, k, 2, QChar('0')) << static_cast<int>(treeNode->symbol);
         aux->code = code;
         aux->size = k;
         aux->symbol = treeNode->symbol;
         aux->next = nullptr;
-        if ((*table)->first == nullptr) {
-            (*table)->first = aux;
-            (*table)->last = aux;
+        if (table->first == nullptr) {
+            table->first = aux;
+            table->last = aux;
         } else {
-            (*table)->last->next = aux;
-            (*table)->last = aux;
+            table->last->next = aux;
+            table->last = aux;
         }
+        return;
     }
 
     //We concatenate a 0 for each step to the left
     if (treeNode->left != nullptr) {
-        code &= ~(1 << k);
-        //code[k] = '0';
+        code &= ~(1 << k); //code[k] = '0';
         traverseTree(treeNode->left, table, k + 1, code);
     }
     //We concatenate a 1 for each step to the right
     if (treeNode->right != nullptr) {
-        code |= (1 << k);
-        //code[k] = '1';
+        code |= (1 << k); //code[k] = '1';
         traverseTree(treeNode->right, table, k + 1, code);
     }
 }
@@ -48,44 +44,39 @@ void traverseTree(htNode* treeNode, hlTable** table, int k, char code)
 hlTable* buildTable(htTree* huffmanTree)
 {
     //We initialize the table
-    hlTable* table = (hlTable*)malloc(sizeof(hlTable));
+    hlTable* table = new hlTable;
     table->first = nullptr;
     table->last = nullptr;
 
     //Auxiliary variables
-    char code = '\0';
+    uchar code = 0;
     //k will memories the level on which the traversal is
     int k = 0;
 
     //We traverse the tree and calculate the codes
-    traverseTree(huffmanTree->root, &table, k, code);
+    traverseTree(huffmanTree->root, table, k, code);
     return table;
 }
 
-htTree* buildTree(const QString& inputString)
+htTree* buildTree(uint64_t inputString)
 {
     //The array in which we calculate the frequency of the symbols
-    //Knowing that there are only 256 posibilities of combining 8 bits
-    //(256 ASCII characters)
-    int probability[256];
-
-    //We initialize the array
-    for (int i = 0; i < 256; i++)
-        probability[i] = 0;
+    //Knowing that there are only Size posibilities of combining 8 bits
+    //(Size ASCII characters)
+    int probability[Size]{ 0 }; //We initialize the array
 
     //We consider the symbol as an array index and we calculate how many times each symbol appears
-
-    for (int i = 0; i < inputString.size(); i++)
-        probability[static_cast<unsigned char>(inputString[i].toLatin1())]++;
+    for (uint i = 0; i < 64 / Section; ++i)
+        ++probability[(inputString >>= Section) & Mask];
 
     //The queue which will hold the tree nodes
     pQueue* huffmanQueue;
     initPQueue(&huffmanQueue);
 
     //We create nodes for each symbol in the string
-    for (int i = 0; i < 256; i++) {
+    for (int i = 0; i < Size; i++) {
         if (probability[i] != 0) {
-            htNode* aux = static_cast<htNode*>(malloc(sizeof(htNode)));
+            htNode* aux = new htNode;
             aux->left = nullptr;
             aux->right = nullptr;
             aux->symbol = static_cast<char>(i);
@@ -99,126 +90,91 @@ htTree* buildTree(const QString& inputString)
         priority += huffmanQueue->first->next->priority;
         htNode* left = getPQueue(&huffmanQueue);
         htNode* right = getPQueue(&huffmanQueue);
-        htNode* newNode = (htNode*)malloc(sizeof(htNode));
+        htNode* newNode = new htNode;
         newNode->left = left;
         newNode->right = right;
         addPQueue(&huffmanQueue, newNode, priority);
     }
 
     //We create the tree
-    htTree* tree = (htTree*)malloc(sizeof(htTree));
+    htTree* tree = new htTree;
 
     tree->root = getPQueue(&huffmanQueue);
 
     return tree;
 }
 
-QByteArray encode(hlTable* table, const QString& stringToEncode)
+static int s = 0;
+
+uint64_t encode(hlTable* table, const uint64_t stringToEncode)
 {
     QByteArray str;
     hlNode* traversal;
 
-    qDebug() << "Encoding";
-    qDebug() << "Input string :" << stringToEncode.size() << stringToEncode;
+    //qDebug() << "Encoding";
+    //qDebug() << "Input string :  " << QString("%1").arg(stringToEncode, 1, 2, QChar('0'));
     //printf("\nEncoding\nInput string : %s\nEncoded string : \n", stringToEncode);
-
-    uchar j = 0;
 
     //For each element of the string traverse the table
     //and once we find the symbol we output the code for it
-
-    uint64_t c = 0;
-
-    for (int i = 0; i < stringToEncode.size(); i++) {
+    uint64_t data = 0;
+    s = size(stringToEncode);
+    //qDebug() << s;
+    int64_t k = 0;
+    for (int i = 0; i < 64 / Section; ++i /* += Section*/) {
         traversal = table->first;
-        while (traversal->symbol != stringToEncode[i])
+        while (traversal->symbol != ((stringToEncode >> i * Section) & Mask))
             traversal = traversal->next;
-        {
-            uchar code = traversal->code;
-            //qDebug() << QString("%1 %2").arg(code, 8, 2, QChar('0')).arg(traversal->size);
-            //str.append(traversal->code);
-            //if ((j + traversal->size) <= 8) {
-            c |= code << j;
-            j += traversal->size;
-            //qDebug() << QString("%1 A").arg(c, 8, 2, QChar('0'));
-            //} else {
-            //                uchar k = 8 - j;
-            //                uchar t = traversal->size - k;
-            //                c |= code >> t;
-            //                //qDebug() << QString("%1 B1").arg(c, 8, 2, QChar('0'));
-            //                str.append(c);
-            //                qDebug() << QString("%1").arg(c, 8, 2, QChar('0'));
-            //                c = code;
-            //                c = (c << (8 - k)) & 0xFF;
-            //                c >>= 8 - (k);
-            //                j = t;
-            qDebug() << QString("                 %1 B2").arg(c, 32, 2, QChar('0'));
-            //            }
-            //qDebug() << "";
-        }
-        //printf("%s", traversal->code);
+        data |= static_cast<uint64_t>(traversal->code) << k;
+        k += traversal->size;
     }
+    s = size(data);
+    //qDebug() << s;
+
     //printf("\n");
-    qDebug() << "Encoded string :" << str.size() << str.toHex().toUpper();
-    return str;
+    //qDebug() << "Encoded string :" << QString("%1").arg(data, 1, 2, QChar('0'));
+    return data;
 }
 
-QString decode(htTree* tree, const QByteArray& stringToDecode)
+uint64_t decode(htTree* tree, const uint64_t stringToDecode)
 {
-    QString str;
+    uint64_t str = 0;
     htNode* traversal = tree->root;
 
-    qDebug() << "Decoding";
-    qDebug() << "Input string :" << stringToDecode;
+    //qDebug() << "Decoding";
 
-    //printf("\nDecoding\nInput string : %s\nDecoded string : \n", stringToDecode);
-
+    //qDebug() << "Input string :  " << QString("%1").arg(stringToDecode, 1, 2, QChar('0'));
     //For each "bit" of the string to decode
-    //we take a step to the left for 0
-    //or ont to the right for 1
-    for (int i = 0; i < stringToDecode.size(); i++) {
-        const char std = stringToDecode[i];
-        //        for (int j = 0; j < 8; ++j) {
-        //            if (traversal->left == nullptr && traversal->right == nullptr) {
-        //                str.append(traversal->symbol);
-        //                qDebug() << "Decoded string :" << str;
-        //                //printf("%c", traversal->symbol);
-        //                traversal = tree->root;
-        //            }
-
-        //            if ((std & ~(0b10000000 >> j)) == 0)
-        //                traversal = traversal->left;
-
-        //            if ((std & (0b10000000 >> j)) == 1)
-        //                traversal = traversal->right;
-        //        }
-
+    //we take a step to the left for 0 or ont to the right for 1
+    int c = 0;
+    for (uint64_t i = 0x1; c < 64 / Section; i <<= 1) {
         if (traversal->left == nullptr && traversal->right == nullptr) {
-            str.append(traversal->symbol);
-            //printf("%c", traversal->symbol);
+            str |= static_cast<uint64_t>(traversal->symbol) << c * Section;
             traversal = tree->root;
+            ++c;
         }
 
-        if (stringToDecode[i] == '0')
-            traversal = traversal->left;
-
-        if (stringToDecode[i] == '1')
+        if (stringToDecode & i) // 1
             traversal = traversal->right;
-
-        if (stringToDecode[i] != '0' && stringToDecode[i] != '1') {
-            qDebug() << "The input string is not coded correctly!";
-            //printf("The input string is not coded correctly!\n");
-            return {};
-        }
+        else //        if (stringToDecode[i] == '0')
+            traversal = traversal->left;
     }
 
     if (traversal->left == nullptr && traversal->right == nullptr) {
-        str.append(traversal->symbol);
-        //printf("%c", traversal->symbol);
+        str |= static_cast<uint64_t>(traversal->symbol) << c * Section;
         traversal = tree->root;
     }
-
-    //printf("\n");
-    qDebug() << "Decoded string :" << str;
+    //qDebug() << "Decoded string :" << QString("%1").arg(str, 1, 2, QChar('0'));
+    //qDebug() << size(str);
     return str;
+}
+
+int size(uint64_t input)
+{
+    int s = 0;
+    for (int i = 0; i < 64 / Section; ++i) {
+        if ((input >>= Section) & Mask)
+            s = i;
+    }
+    return s;
 }
