@@ -164,7 +164,7 @@
         </widget>
        </item>
        <item row="1" column="5">
-        <widget class="QSpinBox" name="sbxSerNum_2">
+        <widget class="QSpinBox" name="sbxSerNumCount">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -241,10 +241,16 @@
     </item>
     <item>
      <widget class="QTableView" name="tableView">
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
       <property name="selectionBehavior">
        <enum>QAbstractItemView::SelectRows</enum>
       </property>
      </widget>
+    </item>
+    <item>
+     <widget class="QTextEdit" name="textEdit"/>
     </item>
    </layout>
   </widget>
@@ -254,7 +260,7 @@
      <x>0</x>
      <y>0</y>
      <width>1181</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu">
@@ -278,6 +284,18 @@
    </property>
   </action>
  </widget>
+ <tabstops>
+  <tabstop>cbxRegul</tabstop>
+  <tabstop>sbxSerNumCount</tabstop>
+  <tabstop>sbxOrder</tabstop>
+  <tabstop>dteOrder</tabstop>
+  <tabstop>pbGen</tabstop>
+  <tabstop>dateEdit</tabstop>
+  <tabstop>tableView</tabstop>
+  <tabstop>textEdit</tabstop>
+  <tabstop>sbxSerNum</tabstop>
+  <tabstop>sbxSerNumCoded</tabstop>
+ </tabstops>
  <resources/>
  <connections/>
 </ui>

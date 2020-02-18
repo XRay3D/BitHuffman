@@ -10,18 +10,6 @@ void Model::save()
     if (file.open(QIODevice::WriteOnly)) {
         QDataStream stream(&file);
         stream << m_data;
-        //        m_dataKey.clear();
-        //        int index = 0;
-        //        for (int i = 0; i < m_data.size(); ++i) {
-        //            qDebug() << i;
-        //            auto& r = m_data[i];
-        //            r.setId(index);
-        //            for (int sn : r.encodedSernumsV()) {
-        //                m_dataKey[sn] = index;
-        //            }
-        //            ++index;
-        //        }
-        stream << m_dataKey;
     }
 }
 
@@ -31,7 +19,13 @@ void Model::restore()
     if (file.open(QIODevice::ReadOnly)) {
         QDataStream stream(&file);
         stream >> m_data;
-        stream >> m_dataKey;
+        std::sort(m_data.begin(), m_data.end(), [](const Record& r1, const Record& r2) {
+            return std::tuple{ r1.regul().id, r1.date().year(), r1.date().month(), r1.sernum() }
+            < std::tuple{ r2.regul().id, r2.date().year(), r2.date().month(), r2.sernum() };
+        });
+        for (int i = 0; i < m_data.size(); ++i) {
+            update(m_data[i], i);
+        }
     }
 }
 
@@ -63,11 +57,17 @@ void Model::addRecord(const Record& record)
     const int index = m_instance->m_data.size();
     m_instance->m_data.append(record); ////////
     m_instance->m_data.last().setId(index);
-    for (int sn : m_instance->m_data.last().encodedSernumsV()) {
-        m_instance->m_dataKey[sn] = index;
-    }
-    m_instance->save();
+    m_instance->update(record, index);
     m_instance->endInsertRows();
+}
+
+void Model::update(const Record& record, int index)
+{
+    for (int sn : record.encodedSernumsV()) {
+        m_dataKey[sn] = index;
+    }
+    m_lastSerNum[{ record.regul().id, { record.date().year(), record.date().month(), 1 } }] += record.count();
+    save();
 }
 
 Record Model::getRecord(int id)
@@ -78,6 +78,12 @@ Record Model::getRecord(int id)
 int Model::getIndex(int encSn)
 {
     return m_instance->m_dataKey.value(encSn, -1);
+}
+
+int Model::getLastSerNum(int regId, const QDate& date)
+{
+    QDate keyDate(date.year(), date.month(), 1);
+    return m_instance->m_lastSerNum.value({ regId, date }, 0) + 1;
 }
 
 int Model::rowCount(const QModelIndex& /*parent*/) const
@@ -94,6 +100,7 @@ QVariant Model::data(const QModelIndex& index, int role) const
 {
     const int row{ index.row() };
     switch (role) {
+    case Qt::ToolTipRole:
     case Qt::DisplayRole:
         switch (index.column()) {
         case 0:

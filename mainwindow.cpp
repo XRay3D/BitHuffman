@@ -14,6 +14,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     Regul::load(ui->cbxRegul);
 
+    ui->dateEdit->setDate(QDate::currentDate());
+
     connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromSerNum);
 
     connect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toSerNum);
@@ -23,7 +25,7 @@ MainWindow::MainWindow(QWidget* parent)
     ui->tableView->setModel(new Model(ui->tableView));
     ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
     ui->tableView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Stretch);
-    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 
     ui->tableView->installEventFilter(this);
 
@@ -53,7 +55,7 @@ MainWindow::~MainWindow()
 void MainWindow::toSerNum()
 {
     disconnect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromSerNum);
-
+    ui->sbxSerNum->setValue(Model::getLastSerNum(Regul::fromIndex(ui->cbxRegul->currentIndex()).id, ui->dateEdit->date()));
     ui->sbxSerNumCoded->setValue(
         Record::toSerNum(Regul::fromIndex(ui->cbxRegul->currentIndex()).id,
             ui->dateEdit->date(),
@@ -88,7 +90,7 @@ void MainWindow::on_pbGen_clicked()
         Regul::fromIndex(ui->cbxRegul->currentIndex()),
         ui->dateEdit->date(),
         ui->sbxSerNum->value(),
-        ui->sbxSerNum_2->value(),
+        ui->sbxSerNumCount->value(),
         ui->sbxOrder->value(),
         ui->dteOrder->date() });
 }

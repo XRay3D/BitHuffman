@@ -13,8 +13,7 @@ QMap<int, int> Regul::revRegul;
 typedef union {
     struct {
         unsigned ser : 10; //  (serNum - 1);
-        unsigned yar : 3; // (date.year() - 2020) << OffsetYear;
-        unsigned mon : 4; //  date.month() << OffsetMonth;
+        unsigned dat : 7; // (date.year() - 2020) << OffsetYear;
         unsigned reg : 6; // regId << OffsetRegul;
         unsigned dum : 9; // regId << OffsetRegul;
     };
@@ -101,8 +100,7 @@ int Record::toSerNum(int regId, const QDate& date, int serNum)
     SN sn;
     sn.csn = 0;
     sn.ser = static_cast<unsigned>(serNum - 1);
-    sn.yar = static_cast<unsigned>(date.year() - 2020);
-    sn.mon = static_cast<unsigned>(date.month());
+    sn.dat = static_cast<unsigned>((date.year() - 2020) * 12 + date.month() - 1);
     sn.reg = static_cast<unsigned>(regId);
     return sn.csn; // yar + reg + month + serNun;
 }
@@ -111,7 +109,7 @@ std::tuple<int, QDate, int> Record::fromSerNum(int raw)
 {
     SN sn;
     sn.csn = raw;
-    return { static_cast<int>(sn.reg), QDate{ static_cast<int>(sn.yar + 2020), static_cast<int>(sn.mon), 1 }, static_cast<int>(sn.ser + 1) };
+    return { static_cast<int>(sn.reg), QDate{ static_cast<int>(sn.dat / 12 + 2020), static_cast<int>(sn.dat % 12 + 1), 1 }, static_cast<int>(sn.ser + 1) };
 }
 
 QString Record::sernums() const

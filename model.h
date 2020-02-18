@@ -9,12 +9,14 @@ class Model : public QAbstractTableModel {
 
     QList<Record> m_data;
     QMap<int, int> m_dataKey;
+    QMap<QPair<int, QDate>, int> m_lastSerNum;
 
     const QStringList m_headerData;
     static Model* m_instance;
 
     void save();
     void restore();
+    void update(const Record& record, int index);
 
 public:
     explicit Model(QObject* parent = nullptr);
@@ -22,6 +24,7 @@ public:
     static void addRecord(const Record& record);
     static Record getRecord(int id);
     static int getIndex(int encSn);
+    static int getLastSerNum(int regId, const QDate& date);
 
 signals:
 
