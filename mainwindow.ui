@@ -6,20 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1181</width>
-    <height>719</height>
+    <width>951</width>
+    <height>536</height>
    </rect>
-  </property>
-  <property name="font">
-   <font>
-    <pointsize>11</pointsize>
-   </font>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,3">
     <item>
      <widget class="QGroupBox" name="groupBox">
       <property name="title">
@@ -104,8 +99,8 @@
          </property>
          <property name="maximumDate">
           <date>
-           <year>2027</year>
-           <month>12</month>
+           <year>2030</year>
+           <month>8</month>
            <day>31</day>
           </date>
          </property>
@@ -186,9 +181,9 @@
         <widget class="QDateEdit" name="dateEdit">
          <property name="maximumDate">
           <date>
-           <year>2027</year>
-           <month>12</month>
-           <day>1</day>
+           <year>2030</year>
+           <month>8</month>
+           <day>31</day>
           </date>
          </property>
          <property name="minimumDate">
@@ -249,9 +244,6 @@
       </property>
      </widget>
     </item>
-    <item>
-     <widget class="QTextEdit" name="textEdit"/>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -259,7 +251,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1181</width>
+     <width>951</width>
      <height>21</height>
     </rect>
    </property>
@@ -292,7 +284,6 @@
   <tabstop>pbGen</tabstop>
   <tabstop>dateEdit</tabstop>
   <tabstop>tableView</tabstop>
-  <tabstop>textEdit</tabstop>
   <tabstop>sbxSerNum</tabstop>
   <tabstop>sbxSerNumCoded</tabstop>
  </tabstops>

@@ -27,5 +27,6 @@ private:
 
     void toSerNum();
     void fromSerNum();
+    void printDialog();
 };
 #endif // MAINWINDOW_H

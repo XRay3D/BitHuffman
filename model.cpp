@@ -7,7 +7,7 @@ Model* Model::m_instance = nullptr;
 void Model::save()
 {
     QFile file("database.bin");
-    if (file.open(QIODevice::WriteOnly)) {
+    if (m_edited && file.open(QIODevice::WriteOnly)) {
         QDataStream stream(&file);
         stream << m_data;
     }
@@ -35,7 +35,7 @@ Model::Model(QObject* parent)
     , m_headerData{
         "Регулировщик",
         "Дата",
-        "Серийные № (мес)",
+        "Кол-во в мес.",
         "Серийные № (код)",
         "Заказ",
         "Дата Заказа"
@@ -53,6 +53,7 @@ Model::~Model()
 
 void Model::addRecord(const Record& record)
 {
+    m_instance->m_edited = true;
     m_instance->beginInsertRows({}, m_instance->m_data.count(), m_instance->m_data.count());
     const int index = m_instance->m_data.size();
     m_instance->m_data.append(record); ////////
@@ -82,8 +83,7 @@ int Model::getIndex(int encSn)
 
 int Model::getLastSerNum(int regId, const QDate& date)
 {
-    QDate keyDate(date.year(), date.month(), 1);
-    return m_instance->m_lastSerNum.value({ regId, date }, 0) + 1;
+    return m_instance->m_lastSerNum.value({ regId, { date.year(), date.month(), 1 } }, 0) + 1;
 }
 
 int Model::rowCount(const QModelIndex& /*parent*/) const
@@ -106,9 +106,9 @@ QVariant Model::data(const QModelIndex& index, int role) const
         case 0:
             return m_data[row].regul().name;
         case 1:
-            return m_data[row].date().toString("MMMM yyyyг.");
+            return m_data[row].date().toString("dd MMMM yyyyг.");
         case 2:
-            return m_data[row].sernums();
+            return "(" + QString::number(m_data[row].count()) + ")\n" + m_data[row].sernums();
         case 3:
             return m_data[row].encodedSernums();
         case 4:

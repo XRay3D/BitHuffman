@@ -5,6 +5,13 @@
 #include <QClipboard>
 #include <QContextMenuEvent>
 #include <QMenu>
+#include <QPageLayout>
+#include <QPrintDialog>
+#include <QPrintPreviewDialog>
+#include <QPrinter>
+#include <QTextDocument>
+#include <QTextEdit>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -31,8 +38,7 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(ui->tableView, &QTableView::customContextMenuRequested, [this](const QPoint& pos) {
         QMenu menu;
-        //        menu.addAction("Печать", [this] {
-        //        });
+        menu.addAction("Печать", [this] { printDialog(); });
         menu.addAction("Копировать", [this] {
             QClipboard* clipboard = QGuiApplication::clipboard();
             QString text;
@@ -85,6 +91,9 @@ void MainWindow::fromSerNum()
 
 void MainWindow::on_pbGen_clicked()
 {
+    if (QMessageBox::information(this, "A}{Tu|/|G", "Это действие нельзя отменить!!!", QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
+        return;
+
     toSerNum();
     Model::addRecord({ //
         Regul::fromIndex(ui->cbxRegul->currentIndex()),
@@ -93,4 +102,33 @@ void MainWindow::on_pbGen_clicked()
         ui->sbxSerNumCount->value(),
         ui->sbxOrder->value(),
         ui->dteOrder->date() });
+
+    ui->sbxSerNum->setValue(Model::getLastSerNum(Regul::fromIndex(ui->cbxRegul->currentIndex()).id, ui->dateEdit->date()));
+    ui->tableView->selectRow(ui->tableView->model()->rowCount() - 1);
+    QTimer ::singleShot(100, [this] { printDialog(); });
+}
+
+void MainWindow::printDialog()
+{
+    QString text;
+    for (auto& index : ui->tableView->selectionModel()->selectedRows()) {
+        text += index.data().toString() + '\r' + Model::getRecord(index.row()).toString().replace('\n', ", ") + '\r';
+    }
+
+    QPrinter printer(QPrinter::HighResolution);
+    printer.setFullPage(true); // must be before setmargin
+    printer.setPageSize(QPrinter::A4);
+    printer.setMargins({ 1, 1, 1, 1 });
+    printer.setPageMargins({ 10, 10, 10, 10 }, QPageLayout::Millimeter);
+    QPrintPreviewDialog preview(&printer, this);
+    connect(&preview, &QPrintPreviewDialog::paintRequested, [text](QPrinter* pPrinter) {
+        QTextEdit document;
+        QFont f;
+        f.setPointSizeF(14);
+        document.setFont(f);
+        document.setPlainText(text);
+        document.setContentsMargins({ 1, 1, 1, 1 });
+        document.print(pPrinter);
+    });
+    preview.exec();
 }

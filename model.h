@@ -7,10 +7,10 @@
 class Model : public QAbstractTableModel {
     Q_OBJECT
 
-    QList<Record> m_data;
+    QVector<Record> m_data;
     QMap<int, int> m_dataKey;
     QMap<QPair<int, QDate>, int> m_lastSerNum;
-
+    bool m_edited = false;
     const QStringList m_headerData;
     static Model* m_instance;
 
@@ -27,11 +27,10 @@ public:
     static int getLastSerNum(int regId, const QDate& date);
 
 signals:
-
     // QAbstractItemModel interface
+
 public:
-    int
-    rowCount(const QModelIndex& parent) const override;
+    int rowCount(const QModelIndex& parent) const override;
     int columnCount(const QModelIndex& parent) const override;
     QVariant data(const QModelIndex& index, int role) const override;
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
