@@ -20,13 +20,17 @@ public:
 
 private slots:
     void on_pbGen_clicked();
+    void on_groupBoxFormat_toggled(bool arg1);
+    void on_groupBoxFormatBit_toggled(bool arg1);
 
 private:
     Ui::MainWindow* ui;
     bool skip = false;
 
-    void toSerNum();
-    void fromSerNum();
+    void toEncSerNum();
+    void fromEncSerNum();
     void printDialog();
+    void tos();
+    bool warningOrder();
 };
 #endif // MAINWINDOW_H

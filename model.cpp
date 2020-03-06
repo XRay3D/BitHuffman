@@ -6,11 +6,21 @@ Model* Model::m_instance = nullptr;
 
 void Model::save()
 {
+
     QFile file("database.bin");
     if (m_edited && file.open(QIODevice::WriteOnly)) {
         QDataStream stream(&file);
         stream << m_data;
     }
+    //    {
+    //        QFile file("database.cache");
+    //        if (m_edited && file.open(QIODevice::WriteOnly)) {
+    //            QDataStream stream(&file);
+    //            stream << m_encSerNumRowsCache;
+    //            stream << m_lastSerNumCache;
+    //            stream << m_ordersCache;
+    //        }
+    //    }
 }
 
 void Model::restore()
@@ -19,13 +29,23 @@ void Model::restore()
     if (file.open(QIODevice::ReadOnly)) {
         QDataStream stream(&file);
         stream >> m_data;
+
         std::sort(m_data.begin(), m_data.end(), [](const Record& r1, const Record& r2) {
             return std::tuple{ r1.regul().id, r1.date().year(), r1.date().month(), r1.sernum() }
             < std::tuple{ r2.regul().id, r2.date().year(), r2.date().month(), r2.sernum() };
         });
+
+        //        QFile file("database.cache");
+        //        if (file.open(QIODevice::ReadOnly)) {
+        //            QDataStream stream(&file);
+        //            stream >> m_encSerNumRowsCache;
+        //            stream >> m_lastSerNumCache;
+        //            stream >> m_ordersCache;
+        //        } else {
         for (int i = 0; i < m_data.size(); ++i) {
             update(m_data[i], i);
         }
+        //        }
     }
 }
 
@@ -65,9 +85,10 @@ void Model::addRecord(const Record& record)
 void Model::update(const Record& record, int index)
 {
     for (int sn : record.encodedSernumsV()) {
-        m_dataKey[sn] = index;
+        m_encSerNumRowsCache[sn] = index;
     }
-    m_lastSerNum[{ record.regul().id, { record.date().year(), record.date().month(), 1 } }] += record.count();
+    m_lastSerNumCache[{ record.regul().id, { record.date().year(), record.date().month(), 1 } }] += record.count();
+    m_ordersCache[{ record.order(), record.orderDate() }] = index;
     save();
 }
 
@@ -78,12 +99,17 @@ Record Model::getRecord(int id)
 
 int Model::getIndex(int encSn)
 {
-    return m_instance->m_dataKey.value(encSn, -1);
+    return m_instance->m_encSerNumRowsCache.value(encSn, -1);
 }
 
 int Model::getLastSerNum(int regId, const QDate& date)
 {
-    return m_instance->m_lastSerNum.value({ regId, { date.year(), date.month(), 1 } }, 0) + 1;
+    return m_instance->m_lastSerNumCache.value({ regId, { date.year(), date.month(), 1 } }, 0) + 1;
+}
+
+int Model::getOrderRow(int order, const QDate& date)
+{
+    return m_instance->m_ordersCache.value({ order, date }, -1);
 }
 
 int Model::rowCount(const QModelIndex& /*parent*/) const

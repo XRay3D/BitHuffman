@@ -8,8 +8,9 @@ class Model : public QAbstractTableModel {
     Q_OBJECT
 
     QVector<Record> m_data;
-    QMap<int, int> m_dataKey;
-    QMap<QPair<int, QDate>, int> m_lastSerNum;
+    QMap<int, int> m_encSerNumRowsCache;
+    QMap<QPair<int, QDate>, int> m_lastSerNumCache;
+    QMap<QPair<int, QDate>, int> m_ordersCache;
     bool m_edited = false;
     const QStringList m_headerData;
     static Model* m_instance;
@@ -25,6 +26,7 @@ public:
     static Record getRecord(int id);
     static int getIndex(int encSn);
     static int getLastSerNum(int regId, const QDate& date);
+    static int getOrderRow(int order, const QDate& date);
 
 signals:
     // QAbstractItemModel interface

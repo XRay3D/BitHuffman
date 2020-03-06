@@ -15,7 +15,7 @@ typedef union {
         unsigned ser : 10; //  (serNum - 1);
         unsigned dat : 7; // (date.year() - 2020) << OffsetYear;
         unsigned reg : 6; // regId << OffsetRegul;
-        unsigned dum : 9; // regId << OffsetRegul;
+        unsigned : 9; // regId << OffsetRegul;
     };
     struct {
         int32_t csn;

@@ -2,6 +2,8 @@ QT       += core gui sql printsupport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+TARGET = GenSerNum
+
 CONFIG += c++17
 
 DESTDIR = $$_PRO_FILE_PWD_/bin
