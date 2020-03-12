@@ -38,7 +38,7 @@ class Regul {
 public:
     Regul();
     Regul(const QStringList& list);
-    static void load(QComboBox* cbx);
+    static void load(QComboBox* cbx, QComboBox* cbx2);
     static Regul fromIndex(int i);
     static int toIndex(int id);
 

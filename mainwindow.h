@@ -23,6 +23,8 @@ private slots:
     void on_groupBoxFormat_toggled(bool arg1);
     void on_groupBoxFormatBit_toggled(bool arg1);
 
+    void on_pushButton_test_clicked();
+
 private:
     Ui::MainWindow* ui;
     bool skip = false;

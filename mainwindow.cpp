@@ -4,6 +4,7 @@
 
 #include <QClipboard>
 #include <QContextMenuEvent>
+#include <QLineEdit>
 #include <QMenu>
 #include <QPageLayout>
 #include <QPainter>
@@ -59,7 +60,9 @@ MainWindow::MainWindow(QWidget* parent)
 {
     ui->setupUi(this);
 
-    Regul::load(ui->cbxRegul);
+    Regul::load(ui->cbxRegul, ui->comboBox);
+    ui->comboBox->lineEdit()->setReadOnly(true);
+    ui->comboBox->lineEdit()->setAlignment(Qt::AlignCenter);
 
     ui->dateEdit->setDate(QDate::currentDate());
     ui->dateOrder->setDate(QDate::currentDate());
@@ -201,56 +204,43 @@ void MainWindow::printDialog()
 void MainWindow::tos()
 {
     QString sqatres1(QString::number(Regul::fromIndex(ui->cbxRegul->currentIndex()).id));
-    QString sqatres2(ui->dateEdit->date().toString("MMyy"));
-    QString sqatres3(QString::number(ui->sbxSerNum->value()));
 
-    int i = 0;
-    ui->spinBox_1->setValue(sqatres1.mid(i++, 1).toInt());
-    ui->spinBox_3->setValue(sqatres1.mid(i++, 1).toInt());
-    i = 0;
-    ui->spinBox_4->setValue(sqatres2.mid(i++, 1).toInt());
-    ui->spinBox_5->setValue(sqatres2.mid(i++, 1).toInt());
-    ui->spinBox_6->setValue(sqatres2.mid(i++, 1).toInt());
-    ui->spinBox_7->setValue(sqatres2.mid(i++, 1).toInt());
+    ui->spinBox_1->setValue(sqatres1.mid(0, 1).toInt());
+    ui->spinBox_2->setValue(Regul::fromIndex(ui->cbxRegul->currentIndex()).id);
+    ui->comboBox->setCurrentIndex(ui->cbxRegul->currentIndex());
 
-    i = sqatres3.length();
-
-    //QVector sbxv{ ui->spinBox_11, ui->spinBox_10, ui->spinBox_9, ui->spinBox_8 };
-    for (auto sbx : { ui->spinBox_11, ui->spinBox_10, ui->spinBox_9, ui->spinBox_8 }) {
-        if (i)
-            sbx->setValue(sqatres3.mid(--i, 1).toInt());
-        else
-            sbx->setValue(0);
-    }
+    ui->spinBox_4->setValue(ui->dateEdit->date().month());
+    ui->spinBox_6->setValue(ui->dateEdit->date().year() - 2000);
+    ui->spinBox_8->setValue(ui->sbxSerNum->value());
 
     int esn = ui->sbxSerNumCoded->value();
 
-    for (auto chbx : {
-             ui->checkBox_1,
-             ui->checkBox_2,
-             ui->checkBox_3,
-             ui->checkBox_4,
-             ui->checkBox_5,
-             ui->checkBox_6,
-             ui->checkBox_7,
-             ui->checkBox_8,
-             ui->checkBox_9,
-             ui->checkBox_10,
-             ui->checkBox_11,
-             ui->checkBox_12,
-             ui->checkBox_13,
-             ui->checkBox_14,
-             ui->checkBox_15,
-             ui->checkBox_16,
-             ui->checkBox_17,
-             ui->checkBox_18,
-             ui->checkBox_19,
-             ui->checkBox_20,
-             ui->checkBox_21,
-             ui->checkBox_22,
-             ui->checkBox_23,
+    for (auto sbx : {
+             ui->sbxBin_1,
+             ui->sbxBin_2,
+             ui->sbxBin_3,
+             ui->sbxBin_4,
+             ui->sbxBin_5,
+             ui->sbxBin_6,
+             ui->sbxBin_7,
+             ui->sbxBin_8,
+             ui->sbxBin_9,
+             ui->sbxBin_10,
+             ui->sbxBin_11,
+             ui->sbxBin_12,
+             ui->sbxBin_13,
+             ui->sbxBin_14,
+             ui->sbxBin_15,
+             ui->sbxBin_16,
+             ui->sbxBin_17,
+             ui->sbxBin_18,
+             ui->sbxBin_19,
+             ui->sbxBin_20,
+             ui->sbxBin_21,
+             ui->sbxBin_22,
+             ui->sbxBin_23,
          }) {
-        chbx->setChecked(esn & 0x1);
+        sbx->setValue(esn & 0x1);
         esn >>= 1;
     }
 }
@@ -287,4 +277,21 @@ void MainWindow::on_groupBoxFormatBit_toggled(bool arg1)
             w->setVisible(arg1);
     }
     ui->gridLayoutFormatBit->setMargin(arg1 ? 6 : 0);
+}
+
+void MainWindow::on_pushButton_test_clicked()
+{
+    auto rnd = [](int a, int b) { return rand() % (b - a + 1) + a; };
+    for (int i = 0; i < 10000; ++i) {
+        qDebug() << i << 10000;
+        Model::addRecord({
+            //
+            Regul::fromIndex(rnd(0, 6)),
+            QDate(rnd(2020, 2029), rnd(1, 12),rnd(1, 28)), //ui->dateEdit->date(),
+            rnd(1, 100), //ui->sbxSerNum->value(),
+            rnd(1, 100), //ui->sbxSerNumCount->value(),
+            rnd(1, 100000), //ui->sbxOrder->value(),
+            QDate(rnd(2020, 2029), rnd(1, 12),rnd(1, 28)), //ui->dateOrder->date() });
+        });
+    }
 }

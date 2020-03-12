@@ -6,7 +6,6 @@ Model* Model::m_instance = nullptr;
 
 void Model::save()
 {
-
     QFile file("database.bin");
     if (m_edited && file.open(QIODevice::WriteOnly)) {
         QDataStream stream(&file);
@@ -54,11 +53,11 @@ Model::Model(QObject* parent)
     : QAbstractTableModel(parent)
     , m_headerData{
         "Регулировщик",
-        "Дата",
+        "Дата изг.",
         "Кол-во в мес.",
         "Серийные № (код)",
-        "Заказ",
-        "Дата Заказа"
+        "№ заказа",
+        "Дата заказа"
     }
 {
     restore();
@@ -75,10 +74,12 @@ void Model::addRecord(const Record& record)
 {
     m_instance->m_edited = true;
     m_instance->beginInsertRows({}, m_instance->m_data.count(), m_instance->m_data.count());
+
     const int index = m_instance->m_data.size();
     m_instance->m_data.append(record); ////////
     m_instance->m_data.last().setId(index);
     m_instance->update(record, index);
+
     m_instance->endInsertRows();
 }
 

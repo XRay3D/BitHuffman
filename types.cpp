@@ -44,7 +44,7 @@ Regul::Regul(const QStringList& list)
     }
 }
 
-void Regul::load(QComboBox* cbx)
+void Regul::load(QComboBox* cbx, QComboBox* cbx2)
 {
     QFile file("регулировщики.csv");
     if (file.open(QIODevice::ReadOnly)) {
@@ -56,8 +56,11 @@ void Regul::load(QComboBox* cbx)
             Regul::regul[index] = Regul{ in.readLine().split(';', QString::SkipEmptyParts) };
             Regul::revRegul[Regul::regul[index].id] = index;
             cbx->addItem(Regul::regul[index].name);
+            cbx2->addItem(QString::number(Regul::regul[index].id));
+            cbx2->setItemData(cbx2->count() - 1, Qt::AlignCenter, Qt::TextAlignmentRole);
             if (!regSet.contains(Regul::regul.last().id)) {
                 regSet.insert(Regul::regul.last().id);
+
             } else {
                 QMessageBox::warning(nullptr,
                     "Ошибка",
