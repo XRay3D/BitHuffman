@@ -1,57 +1,23 @@
 #include "mainwindow.h"
+#include "database/addadjuster.h"
+#include "database/adddepartment.h"
+#include "database/database.h"
 #include "model.h"
 #include "ui_mainwindow.h"
-
 #include <QClipboard>
 #include <QContextMenuEvent>
+#include <QDataWidgetMapper>
+#include <QLineEdit>
 #include <QMenu>
 #include <QPageLayout>
-#include <QPainter>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
 #include <QSettings>
 #include <QStyle>
-#include <QStyledItemDelegate>
 #include <QTextDocument>
 #include <QTextEdit>
 #include <QTimer>
-
-class ItemDelegate : public QStyledItemDelegate {
-    //Q_OBJECT
-public:
-    ItemDelegate(QObject* parent = nullptr)
-        : QStyledItemDelegate(parent)
-    {
-    }
-    virtual ~ItemDelegate() override {}
-
-    // QAbstractItemDelegate interface
-public:
-    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
-    {
-        if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
-            QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Normal /*Disabled*/;
-            //            if (cg == QPalette::Normal && !(option.state & QStyle::State_Active))
-            //                cg = QPalette::Inactive;
-            painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
-        } else {
-            QVariant value = index.data(Qt::BackgroundRole);
-            if (value.canConvert<QBrush>()) {
-                QPointF oldBO = painter->brushOrigin();
-                painter->setBrushOrigin(option.rect.topLeft());
-                painter->fillRect(option.rect, qvariant_cast<QBrush>(value));
-                painter->setBrushOrigin(oldBO);
-            }
-        }
-        {
-            auto opt = option;
-            opt.state &= ~QStyle::State_Selected;
-            opt.state &= ~QStyle::State_HasFocus;
-            QStyledItemDelegate::paint(painter, opt, index);
-        }
-    }
-};
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
@@ -60,6 +26,121 @@ MainWindow::MainWindow(QWidget* parent)
     ui->setupUi(this);
 
     Regul::load(ui->cbxRegul);
+
+    connect(ui->actionAddDep, &QAction::triggered, [this] { AddDepartment(this).exec(); });
+    connect(ui->actionAddReg, &QAction::triggered, [this] { AddAdjuster(this).exec(); });
+
+    if (1) {
+        //        /* Первым делом необходимо создать объект, который будет использоваться для работы с данными нашей БД
+        //         * и инициализировать подключение к базе данных
+        //         * */
+        db = new DataBase();
+        if (!db->connectToDataBase()) {
+            exit(0);
+        }
+
+        // Create the data model:
+        model = new QSqlRelationalTableModel(ui->tableViewSql);
+        model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+        model->setTable(TABLE_SN);
+
+        // Remember the indexes of the columns:
+        adjIdx = model->fieldIndex(TABLE_SN_ADJ_ID);
+        ordNumIdx = model->fieldIndex(TABLE_SN_ORDER_NUM);
+        ordDateIdx = model->fieldIndex(TABLE_SN_ORDER_DATE);
+
+        // Set the relations to the other database tables:
+        model->setRelation(adjIdx, QSqlRelation(TABLE_ADJ, TABLE_ADJ_ID, TABLE_ADJ_NAME));
+        model->setRelation(ordNumIdx, QSqlRelation(TABLE_ORDER, "id", TABLE_ORD_NUM));
+        model->setRelation(ordDateIdx, QSqlRelation(TABLE_ORDER, "id", TABLE_ORD_DATE));
+
+        // Set the localized header captions:
+
+        model->setHeaderData(model->fieldIndex(TABLE_SN_ADJ_ID), Qt::Horizontal, "Регулировщик");
+        model->setHeaderData(model->fieldIndex(TABLE_SN_DATE_CREATION), Qt::Horizontal, "Дата изг.");
+        model->setHeaderData(model->fieldIndex(TABLE_SN_MONTH_COUNT), Qt::Horizontal, "№ в мес.");
+        model->setHeaderData(model->fieldIndex(TABLE_SN_CODED), Qt::Horizontal, "Серийные № (код)");
+        model->setHeaderData(model->fieldIndex(TABLE_SN_ORDER_NUM), Qt::Horizontal, "№ Заказа");
+        model->setHeaderData(model->fieldIndex(TABLE_SN_ORDER_DATE), Qt::Horizontal, "Дата Заказа");
+
+        // Populate the model:
+        if (!model->select()) {
+            showError(model->lastError());
+            return;
+        }
+
+        // Set the model and hide the ID column:
+        ui->tableViewSql->setModel(model);
+        //        ui->tableViewSql->setItemDelegate(new BookDelegate(ui->tableViewSql));
+        ui->tableViewSql->setColumnHidden(model->fieldIndex("id"), true);
+        ui->tableViewSql->setSelectionMode(QAbstractItemView::SingleSelection);
+
+        // Initialize the combo box:
+        ui->cbxRegul->setModel(model->relationModel(adjIdx));
+        ui->cbxRegul->setModelColumn(model->relationModel(adjIdx)->fieldIndex(TABLE_ADJ_NAME));
+        //        ui.genreEdit->setModel(model->relationModel(genreIdx));
+        //        ui.genreEdit->setModelColumn(model->relationModel(genreIdx)->fieldIndex("name"));
+
+        // Lock and prohibit resizing of the width of the rating column:
+        //        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(model->fieldIndex("rating"), QHeaderView::ResizeToContents);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TABLE_SN_ORDER_DATE), QHeaderView::Stretch);
+
+        //        QDataWidgetMapper* mapper = new QDataWidgetMapper(this);
+        //        mapper->setModel(model);
+        //        mapper->setItemDelegate(new BookDelegate(this));
+        //        mapper->addMapping(ui.titleEdit, model->fieldIndex("title"));
+        //        mapper->addMapping(ui.yearEdit, model->fieldIndex("year"));
+        //        mapper->addMapping(ui.authorEdit, authorIdx);
+        //        mapper->addMapping(ui.genreEdit, genreIdx);
+        //        mapper->addMapping(ui.ratingEdit, model->fieldIndex("rating"));
+        //        connect(ui->tableViewSql->selectionModel(), &QItemSelectionModel::currentRowChanged, mapper, &QDataWidgetMapper::setCurrentModelIndex);
+
+        ui->tableViewSql->setCurrentIndex(model->index(0, 0));
+
+        //        /* После чего производим наполнение таблицы базы данных
+        //         * контентом, который будет отображаться в TableView
+        //         * */
+        //        //        for (int i = 0; i < 4; i++) {
+        //        //            QVariantList data;
+        //        //            int random = qrand(); // Получаем случайные целые числа для вставки а базу данных
+        //        //            data.append(QDate::currentDate()); // Получаем текущую дату для вставки в БД
+        //        //            data.append(QTime::currentTime()); // Получаем текущее время для вставки в БД
+        //        //            // Подготавливаем полученное случайное число для вставки в БД
+        //        //            data.append(random);
+        //        //            // Подготавливаем сообщение для вставки в базу данных
+        //        //            data.append("Получено сообщение от " + QString::number(random));
+        //        //            // Вставляем данные в БД
+        //        //            db->inserIntoTable(data);
+        //        //        }
+
+        //        /* Инициализируем модель для представления данных с заданием названий колонок */
+        //        //        setupModel(TABLE, { tr("id"), tr("Дата"), tr("Время"), tr("Рандомное число"), tr("Сообщение") });
+        //        setupModel(TABLE_SN, { "id", "Регулировщик", "Дата", "№ в мес.", "Серийные № (код)", "Заказ", "Дата Заказа" });
+
+        //        /* Инициализируем внешний вид таблицы с данными */
+        //        ui->tableViewSql->setModel(model); // Устанавливаем модель на TableView
+        //        ui->tableViewSql->setColumnHidden(0, true); // Скрываем колонку с id записей
+        //        // Разрешаем выделение строк
+        //        //        ui->tableViewSql->setSelectionBehavior(QAbstractItemView::SelectRows);
+        //        // Устанавливаем режим выделения лишь одно строки в таблице
+        //        ui->tableViewSql->setSelectionMode(QAbstractItemView::SingleSelection);
+        //        // Устанавливаем размер колонок по содержимому
+        //        ui->tableViewSql->resizeColumnsToContents();
+        //        //        ui->tableViewSql->setEditTriggers(QAbstractItemView::NoEditTriggers);
+        //        ui->tableViewSql->horizontalHeader()->setStretchLastSection(true);
+        //        model->select(); // Делаем выборку данных из таблицы
+
+        //        //        QDataWidgetMapper* mapper = new QDataWidgetMapper(this);
+        //        //        mapper->setModel(model);
+        //        //        //        mapper->setItemDelegate(new BookDelegate(this));
+        //        //        mapper->addMapping(new QLineEdit(this), model->fieldIndex(TABLE_MESSAGE));
+        //        //        //        mapper->addMapping(ui.yearEdit, model->fieldIndex("year"));
+        //        //        //        mapper->addMapping(ui.authorEdit, authorIdx);
+        //        //        //        mapper->addMapping(ui.genreEdit, genreIdx);
+        //        //        //        mapper->addMapping(ui.ratingEdit, model->fieldIndex("rating"));
+        //        //        connect(ui->tableViewSql->selectionModel(), &QItemSelectionModel::currentRowChanged, mapper, &QDataWidgetMapper::setCurrentModelIndex);
+    }
 
     ui->dateEdit->setDate(QDate::currentDate());
     ui->dateOrder->setDate(QDate::currentDate());
@@ -287,4 +368,19 @@ void MainWindow::on_groupBoxFormatBit_toggled(bool arg1)
             w->setVisible(arg1);
     }
     ui->gridLayoutFormatBit->setMargin(arg1 ? 6 : 0);
+}
+
+void MainWindow::setupModel(const QString& tableName, const QStringList& headers)
+{
+    model = new QSqlRelationalTableModel(ui->tableViewSql);
+    //model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    model->setTable(tableName);
+
+    /* Устанавливаем названия колонок в таблице с сортировкой данных
+     * */
+    for (int i = 0; i < model->columnCount(); i++) {
+        model->setHeaderData(i, Qt::Horizontal, headers.value(i));
+    }
+    // Устанавливаем сортировку по возрастанию данных по нулевой колонке
+    model->setSort(0, Qt::AscendingOrder);
 }

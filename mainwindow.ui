@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>634</width>
-    <height>510</height>
+    <width>836</width>
+    <height>689</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Генератор серийных номеров</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,3">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,3,0">
     <item>
      <widget class="QGroupBox" name="groupBoxFormatBit">
       <property name="title">
@@ -1027,6 +1027,16 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QTableView" name="tableViewSql">
+      <property name="editTriggers">
+       <set>QAbstractItemView::DoubleClicked</set>
+      </property>
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -1034,7 +1044,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>634</width>
+     <width>836</width>
      <height>21</height>
     </rect>
    </property>
@@ -1042,10 +1052,22 @@
     <property name="title">
      <string>Файл</string>
     </property>
+    <addaction name="actionAddDep"/>
+    <addaction name="actionAddReg"/>
    </widget>
    <addaction name="menu"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionAddDep">
+   <property name="text">
+    <string>Добавить подразделение</string>
+   </property>
+  </action>
+  <action name="actionAddReg">
+   <property name="text">
+    <string>Добавить регулировщика</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>cbxRegul</tabstop>

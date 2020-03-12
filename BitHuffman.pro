@@ -21,17 +21,25 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    database/adddepartment.cpp \
+    database/addadjuster.cpp \
+    database/database.cpp \
     main.cpp \
     mainwindow.cpp \
     model.cpp \
     types.cpp
 
 HEADERS += \
+    database/adddepartment.h \
+    database/addadjuster.h \
+    database/database.h \
     mainwindow.h \
     model.h \
     types.h
 
 FORMS += \
+    database/adddepartment.ui \
+    database/addadjuster.ui \
     mainwindow.ui
 
 # Default rules for deployment.

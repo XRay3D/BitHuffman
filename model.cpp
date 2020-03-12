@@ -1,8 +1,28 @@
 #include "model.h"
+#include "database/database.h"
 #include <QDataStream>
 #include <QFile>
+#include <QtSql>
 
 Model* Model::m_instance = nullptr;
+
+void on_pushButtonAdd_clicked()
+{
+    QSqlQuery q;
+
+    if (!q.prepare("INSERT INTO " + TABLE_DEPARTMENT + "(" + TABLE_DEP_NUMBER + ", " + TABLE_DEP_NAME + ") VALUES(?, ?)")) {
+        qDebug() << q.lastError().text();
+        return;
+    }
+
+    q.addBindValue(ui->spinBoxNumber->value());
+    q.addBindValue("Введите название");
+
+    if (!q.exec()) {
+        qDebug() << q.lastError().text();
+        return;
+    }
+}
 
 void Model::save()
 {

@@ -1,9 +1,11 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include "types.h"
 #include <QMainWindow>
-
-#include <types.h>
+#include <QPainter>
+#include <QStyledItemDelegate>
+#include <QtSql>
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -11,6 +13,7 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class DataBase;
 class MainWindow : public QMainWindow {
     Q_OBJECT
 
@@ -27,10 +30,56 @@ private:
     Ui::MainWindow* ui;
     bool skip = false;
 
+    //    QSqlRelationalTableModel* model;
+    DataBase* db;
+    QSqlRelationalTableModel* model;
+    void setupModel(const QString& tableName, const QStringList& headers);
+
+    int adjIdx;
+    int ordNumIdx;
+    int ordDateIdx;
+
     void toEncSerNum();
     void fromEncSerNum();
     void printDialog();
     void tos();
     bool warningOrder();
 };
+
+class ItemDelegate : public QStyledItemDelegate {
+    //Q_OBJECT
+public:
+    ItemDelegate(QObject* parent = nullptr)
+        : QStyledItemDelegate(parent)
+    {
+    }
+    virtual ~ItemDelegate() override {}
+
+    // QAbstractItemDelegate interface
+public:
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
+            QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Normal /*Disabled*/;
+            //            if (cg == QPalette::Normal && !(option.state & QStyle::State_Active))
+            //                cg = QPalette::Inactive;
+            painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
+        } else {
+            QVariant value = index.data(Qt::BackgroundRole);
+            if (value.canConvert<QBrush>()) {
+                QPointF oldBO = painter->brushOrigin();
+                painter->setBrushOrigin(option.rect.topLeft());
+                painter->fillRect(option.rect, qvariant_cast<QBrush>(value));
+                painter->setBrushOrigin(oldBO);
+            }
+        }
+        {
+            auto opt = option;
+            opt.state &= ~QStyle::State_Selected;
+            opt.state &= ~QStyle::State_HasFocus;
+            QStyledItemDelegate::paint(painter, opt, index);
+        }
+    }
+};
+
 #endif // MAINWINDOW_H

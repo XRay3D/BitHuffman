@@ -34,7 +34,13 @@ int main(int argc, char* argv[])
     f.setPointSizeF(10);
     a.setFont(f);
 
+    QElapsedTimer t;
+    t.start();
+
     MainWindow w;
     w.show();
+
+    qDebug() << "elapsed" << t.elapsed() / 1000.0 << "sec.";
+
     return a.exec();
 }
