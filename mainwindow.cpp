@@ -39,6 +39,66 @@ MainWindow::MainWindow(QWidget* parent)
             exit(0);
         }
 
+        {
+
+            QSqlQuery query;
+            int numRows;
+            query.exec("SELECT " + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + " FROM "
+                + TABLE_ORDER
+                + " WHERE "
+                + TABLE_ORD_NUM + " = " + QString ::number(1000)
+                + " AND "
+                + TABLE_ORD_DATE + " = " + QDate::currentDate().toString("yyyy-MM-dd;"));
+
+            QSqlDatabase defaultDB = QSqlDatabase::database();
+            if (defaultDB.driver()->hasFeature(QSqlDriver::QuerySize)) {
+                qDebug() << "driver";
+                numRows = query.size();
+            } else {
+                qDebug() << "else" << query.at(); // this can be very slow
+                query.last();
+                numRows = query.at() + 1;
+            }
+            qDebug() << numRows;
+        }
+        return;
+        {
+
+            qDebug() << "Add";
+            QString queryStr("SELECT * FROM "
+                + TABLE_ORDER
+                + " WHERE "
+                + TABLE_ORD_NUM + " = " + QString ::number(1000)
+                + " AND "
+                + TABLE_ORD_DATE + " = " + QDate::currentDate().toString("yyyy-MM-dd;"));
+
+            QSqlQuery q;
+            if (!q.exec(queryStr)) {
+                qDebug() << q.lastError().text();
+                return;
+            }
+            qDebug() << "next" << q.next();
+            if (q.next()) {
+                qDebug() << q.value(q.record().indexOf(TABLE_ORD_NUM)).toString();
+                qDebug() << "skipped";
+            } else {
+                if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)")) {
+                    qDebug() << q.lastError().text();
+                    return;
+                }
+
+                q.addBindValue(1000);
+                q.addBindValue(QDate::currentDate());
+
+                if (!q.exec()) {
+                    qDebug() << q.lastError().text();
+                    return;
+                }
+                qDebug() << "added";
+            }
+        }
+
+        return;
         // Create the data model:
         model = new QSqlRelationalTableModel(ui->tableViewSql);
         model->setEditStrategy(QSqlTableModel::OnManualSubmit);

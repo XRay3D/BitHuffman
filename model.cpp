@@ -6,21 +6,35 @@
 
 Model* Model::m_instance = nullptr;
 
-void on_pushButtonAdd_clicked()
+void Add(const Record& record)
 {
-    QSqlQuery q;
+    return;
+    qDebug() << "Add";
+    QString queryStr("SELECT * FROM "
+        + TABLE_ORDER
+        + " WHERE "
+        + TABLE_ORD_NUM + " = " + QString ::number(/*record.order()*/ 1000)
+        + " AND "
+        + TABLE_ORD_DATE + " = " + /* record.orderDate().*/ QDate::currentDate().toString("yyyy-MM-dd;"));
 
-    if (!q.prepare("INSERT INTO " + TABLE_DEPARTMENT + "(" + TABLE_DEP_NUMBER + ", " + TABLE_DEP_NAME + ") VALUES(?, ?)")) {
-        qDebug() << q.lastError().text();
-        return;
-    }
+    QSqlQuery q(queryStr);
+    if (q.next()) {
+        qDebug() << "next" << q.value(q.record().indexOf(TABLE_ORD_NUM)).toString();
+        qDebug() << "skipped";
+    } else {
+        if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)")) {
+            qDebug() << q.lastError().text();
+            return;
+        }
 
-    q.addBindValue(ui->spinBoxNumber->value());
-    q.addBindValue("Введите название");
+        q.addBindValue(record.order());
+        q.addBindValue(record.orderDate());
 
-    if (!q.exec()) {
-        qDebug() << q.lastError().text();
-        return;
+        if (!q.exec()) {
+            qDebug() << q.lastError().text();
+            return;
+        }
+        qDebug() << "added";
     }
 }
 
@@ -104,6 +118,7 @@ void Model::addRecord(const Record& record)
 
 void Model::update(const Record& record, int index)
 {
+    Add(record);
     for (int sn : record.encodedSernumsV()) {
         m_encSerNumRowsCache[sn] = index;
     }
