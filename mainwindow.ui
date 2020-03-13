@@ -14,7 +14,7 @@
    <string>Генератор серийных номеров</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,3,0">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0,3">
     <item>
      <widget class="QGroupBox" name="groupBoxFormatBit">
       <property name="title">
@@ -1030,9 +1030,15 @@
     <item>
      <widget class="QTableView" name="tableViewSql">
       <property name="editTriggers">
-       <set>QAbstractItemView::DoubleClicked</set>
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <property name="dragDropOverwriteMode">
+       <bool>false</bool>
       </property>
       <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+      <property name="sortingEnabled">
        <bool>true</bool>
       </property>
      </widget>

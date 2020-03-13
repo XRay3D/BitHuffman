@@ -8,33 +8,84 @@ Model* Model::m_instance = nullptr;
 
 void Add(const Record& record)
 {
-    return;
-    qDebug() << "Add";
-    QString queryStr("SELECT * FROM "
-        + TABLE_ORDER
-        + " WHERE "
-        + TABLE_ORD_NUM + " = " + QString ::number(/*record.order()*/ 1000)
-        + " AND "
-        + TABLE_ORD_DATE + " = " + /* record.orderDate().*/ QDate::currentDate().toString("yyyy-MM-dd;"));
+    static bool fl{};
+    if (fl) {
+        fl = true;
+        QSqlQuery q;
+        //        q.prepare("DELETE FROM " + TABLE_SN + " WHERE id > 0");
+        //        if (!q.exec())
+        //            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
 
-    QSqlQuery q(queryStr);
-    if (q.next()) {
-        qDebug() << "next" << q.value(q.record().indexOf(TABLE_ORD_NUM)).toString();
-        qDebug() << "skipped";
-    } else {
-        if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)")) {
-            qDebug() << q.lastError().text();
-            return;
+        //        q.prepare("DELETE FROM " + TABLE_ORDER + " WHERE id > 0");
+        //        if (!q.exec())
+        //            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
+
+        qDebug() << "DELETE";
+
+        q.setForwardOnly(true);
+        q.prepare("DROP TABLE IF EXISTS " + TABLE_SN);
+        if (!q.exec())
+            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
+
+        if (QSqlQuery query; !query.exec("CREATE TABLE " + TABLE_SN
+                + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + TABLE_SN_ADJ_ID + " INTEGER NOT NULL,"
+                + TABLE_SN_DATE_CREATION + " DATE NOT NULL,"
+                + TABLE_SN_MONTH_COUNT + " INTEGER NOT NULL,"
+                + TABLE_SN_CODED + " INTEGER NOT NULL UNIQUE,"
+                + TABLE_SN_ORDER_NUM + " INTEGER NOT NULL,"
+                + TABLE_SN_ORDER_DATE + " INTEGER NOT NULL"
+                                        " )")) {
+            qDebug() << "DataBase: error of create " << TABLE_SN;
+            qDebug() << query.lastError().text();
         }
+    }
+    int id;
+    {
+        QSqlQuery q;
+        q.setForwardOnly(true);
+        q.prepare("SELECT * FROM " + TABLE_ORDER
+            + " WHERE " + TABLE_ORD_NUM + " = :ref_id1"
+            + " AND " + TABLE_ORD_DATE + " = :ref_id2");
+        q.bindValue(":ref_id1", record.order());
+        q.bindValue(":ref_id2", record.orderDate());
 
-        q.addBindValue(record.order());
-        q.addBindValue(record.orderDate());
+        if (!q.exec())
+            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
 
-        if (!q.exec()) {
-            qDebug() << q.lastError().text();
-            return;
+        if /*while*/ (q.next()) {
+            qDebug() << (id = q.value(0).toInt()) << q.value(1) << q.value(2).toDate().toString("dd.MM.yyyy");
+        } else {
+            if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)"))
+                qDebug() << q.lastError().text();
+            q.addBindValue(record.order());
+            q.addBindValue(record.orderDate());
+            if (!q.exec())
+                qDebug() << q.lastError().text();
         }
-        qDebug() << "added";
+    }
+    {
+        QSqlQuery q;
+
+        for (int sn : record.encodedSernumsV()) {
+            if (!q.prepare("INSERT INTO " + TABLE_SN + "("
+                    + TABLE_SN_ADJ_ID + ", "
+                    + TABLE_SN_DATE_CREATION + ", "
+                    + TABLE_SN_MONTH_COUNT + ", "
+                    + TABLE_SN_CODED + ", "
+                    + TABLE_SN_ORDER_NUM + ", "
+                    + TABLE_SN_ORDER_DATE + ") VALUES(?, ?, ?, ?, ?, ?)"))
+                qDebug() << q.lastError().text();
+            auto [reg, dat, ser] = Record::fromSerNum(sn);
+            q.addBindValue(reg);
+            q.addBindValue(dat);
+            q.addBindValue(ser);
+            q.addBindValue(sn);
+            q.addBindValue(id);
+            q.addBindValue(id);
+            if (!q.exec())
+                qDebug() << q.lastError().text();
+        }
     }
 }
 
@@ -107,6 +158,8 @@ Model::~Model()
 
 void Model::addRecord(const Record& record)
 {
+    if (!m_instance)
+        return;
     m_instance->m_edited = true;
     m_instance->beginInsertRows({}, m_instance->m_data.count(), m_instance->m_data.count());
     const int index = m_instance->m_data.size();
@@ -129,21 +182,29 @@ void Model::update(const Record& record, int index)
 
 Record Model::getRecord(int id)
 {
+    if (!m_instance)
+        return {};
     return m_instance->m_data.value(id);
 }
 
 int Model::getIndex(int encSn)
 {
+    if (!m_instance)
+        return -1;
     return m_instance->m_encSerNumRowsCache.value(encSn, -1);
 }
 
 int Model::getLastSerNum(int regId, const QDate& date)
 {
+    if (!m_instance)
+        return -1;
     return m_instance->m_lastSerNumCache.value({ regId, { date.year(), date.month(), 1 } }, 0) + 1;
 }
 
 int Model::getOrderRow(int order, const QDate& date)
 {
+    if (!m_instance)
+        return -1;
     return m_instance->m_ordersCache.value({ order, date }, -1);
 }
 

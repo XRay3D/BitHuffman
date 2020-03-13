@@ -49,6 +49,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 DISTFILES += \
     Hff.java \
+    bin/database.bin \
     bin/database.db \
     huffman.cpp \
     pQueue.cpp \

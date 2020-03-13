@@ -19,6 +19,62 @@
 #include <QTextEdit>
 #include <QTimer>
 
+class Delegate : public QSqlRelationalDelegate {
+public:
+    Delegate(QObject* parent)
+        : QSqlRelationalDelegate(parent)
+    {
+    }
+
+    //    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    //    {
+    //        //        switch (index.column()) {
+    //        //        case 0:
+    //        //            [[fallthrough]];
+    //        //        case 1: {
+    //        //            QSpinBox* sb = new QSpinBox(parent);
+    //        //            sb->setFrame(false);
+    //        //            sb->setMaximum(index.data().toInt());
+    //        //            sb->setMinimum(index.data().toInt());
+    //        //            sb->setButtonSymbols(QSpinBox::NoButtons);
+    //        //            return sb;
+    //        //        }
+    //        //        case 3: {
+    //        //            QLineEdit* le = new QLineEdit(parent);
+    //        //            le->setFrame(false);
+    //        //            le->setText(index.data().toString());
+    //        //            return le;
+    //        //        }
+    //        //        }
+    //        return QSqlRelationalDelegate::createEditor(parent, option, index);
+    //    }
+
+    // QAbstractItemDelegate interface
+    void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+    {
+        if (option.showDecorationSelected && (option.state & QStyle::State_Selected)) {
+            QPalette::ColorGroup cg = option.state & QStyle::State_Enabled ? QPalette::Normal : QPalette::Normal /*Disabled*/;
+            //            if (cg == QPalette::Normal && !(option.state & QStyle::State_Active))
+            //                cg = QPalette::Inactive;
+            painter->fillRect(option.rect, option.palette.brush(cg, QPalette::Highlight));
+        } else {
+            QVariant value = index.data(Qt::BackgroundRole);
+            if (value.canConvert<QBrush>()) {
+                QPointF oldBO = painter->brushOrigin();
+                painter->setBrushOrigin(option.rect.topLeft());
+                painter->fillRect(option.rect, qvariant_cast<QBrush>(value));
+                painter->setBrushOrigin(oldBO);
+            }
+        }
+        {
+            auto opt = option;
+            opt.state &= ~QStyle::State_Selected;
+            opt.state &= ~QStyle::State_HasFocus;
+            QSqlRelationalDelegate::paint(painter, opt, index);
+        }
+    }
+};
+
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -30,75 +86,63 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->actionAddDep, &QAction::triggered, [this] { AddDepartment(this).exec(); });
     connect(ui->actionAddReg, &QAction::triggered, [this] { AddAdjuster(this).exec(); });
 
+    ui->dateEdit->setDate(QDate::currentDate());
+    ui->dateOrder->setDate(QDate::currentDate());
+
     if (1) {
-        //        /* Первым делом необходимо создать объект, который будет использоваться для работы с данными нашей БД
-        //         * и инициализировать подключение к базе данных
-        //         * */
+        connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromEncSerNum);
+
+        connect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toEncSerNum);
+        connect(ui->cbxRegul, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::toEncSerNum);
+        connect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toEncSerNum);
+
+        connect(ui->sbxOrder, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::warningOrder);
+        connect(ui->dateOrder, &QDateEdit::dateChanged, this, &MainWindow::warningOrder);
+
+        //    ui->tableView->setModel(new Model(ui->tableView));
+        if (ui->tableView->model()) {
+            ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
+            ui->tableView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Stretch);
+            ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+
+            ui->tableView->installEventFilter(this);
+
+            connect(ui->tableView, &QTableView::customContextMenuRequested, [this](const QPoint& pos) {
+                QMenu menu;
+                menu.addAction("Печать", [this] { printDialog(); });
+                menu.addAction("Копировать", [this] {
+                    QClipboard* clipboard = QGuiApplication::clipboard();
+                    QString text;
+                    for (auto& index : ui->tableView->selectionModel()->selectedRows()) {
+                        text += Model::getRecord(index.row()).toString();
+                    }
+                    clipboard->setText(text);
+                });
+                menu.exec(ui->tableView->mapToGlobal(pos));
+            });
+            ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
+            ui->tableView->setItemDelegate(new ItemDelegate(ui->tableView));
+        }
+    }
+
+    toEncSerNum();
+
+    QSettings settings("GenSerNum.ini", QSettings::IniFormat);
+    ui->groupBoxFormat->setChecked(settings.value("groupBoxFormat", false).toBool());
+    ui->groupBoxFormatBit->setChecked(settings.value("groupBoxFormatBit", false).toBool());
+    restoreState(settings.value("state").toByteArray());
+    restoreGeometry(settings.value("geometry").toByteArray());
+
+    {
+        /* Первым делом необходимо создать объект, который
+     * будет использоваться для работы с данными нашей БД
+     * и инициализировать подключение к базе данных
+     */
         db = new DataBase();
-        if (!db->connectToDataBase()) {
+        if (!db->connectToDataBase())
             exit(0);
-        }
 
-        {
-
-            QSqlQuery query;
-            int numRows;
-            query.exec("SELECT " + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + " FROM "
-                + TABLE_ORDER
-                + " WHERE "
-                + TABLE_ORD_NUM + " = " + QString ::number(1000)
-                + " AND "
-                + TABLE_ORD_DATE + " = " + QDate::currentDate().toString("yyyy-MM-dd;"));
-
-            QSqlDatabase defaultDB = QSqlDatabase::database();
-            if (defaultDB.driver()->hasFeature(QSqlDriver::QuerySize)) {
-                qDebug() << "driver";
-                numRows = query.size();
-            } else {
-                qDebug() << "else" << query.at(); // this can be very slow
-                query.last();
-                numRows = query.at() + 1;
-            }
-            qDebug() << numRows;
-        }
-        return;
-        {
-
-            qDebug() << "Add";
-            QString queryStr("SELECT * FROM "
-                + TABLE_ORDER
-                + " WHERE "
-                + TABLE_ORD_NUM + " = " + QString ::number(1000)
-                + " AND "
-                + TABLE_ORD_DATE + " = " + QDate::currentDate().toString("yyyy-MM-dd;"));
-
-            QSqlQuery q;
-            if (!q.exec(queryStr)) {
-                qDebug() << q.lastError().text();
-                return;
-            }
-            qDebug() << "next" << q.next();
-            if (q.next()) {
-                qDebug() << q.value(q.record().indexOf(TABLE_ORD_NUM)).toString();
-                qDebug() << "skipped";
-            } else {
-                if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)")) {
-                    qDebug() << q.lastError().text();
-                    return;
-                }
-
-                q.addBindValue(1000);
-                q.addBindValue(QDate::currentDate());
-
-                if (!q.exec()) {
-                    qDebug() << q.lastError().text();
-                    return;
-                }
-                qDebug() << "added";
-            }
-        }
-
-        return;
+        //return;
         // Create the data model:
         model = new QSqlRelationalTableModel(ui->tableViewSql);
         model->setEditStrategy(QSqlTableModel::OnManualSubmit);
@@ -131,21 +175,23 @@ MainWindow::MainWindow(QWidget* parent)
 
         // Set the model and hide the ID column:
         ui->tableViewSql->setModel(model);
-        //        ui->tableViewSql->setItemDelegate(new BookDelegate(ui->tableViewSql));
+        ui->tableViewSql->setItemDelegate(new Delegate(ui->tableViewSql));
         ui->tableViewSql->setColumnHidden(model->fieldIndex("id"), true);
         ui->tableViewSql->setSelectionMode(QAbstractItemView::SingleSelection);
+        ui->tableViewSql->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         // Initialize the combo box:
         ui->cbxRegul->setModel(model->relationModel(adjIdx));
         ui->cbxRegul->setModelColumn(model->relationModel(adjIdx)->fieldIndex(TABLE_ADJ_NAME));
-        //        ui.genreEdit->setModel(model->relationModel(genreIdx));
-        //        ui.genreEdit->setModelColumn(model->relationModel(genreIdx)->fieldIndex("name"));
 
         // Lock and prohibit resizing of the width of the rating column:
-        //        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(model->fieldIndex("rating"), QHeaderView::ResizeToContents);
-        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TABLE_SN_ORDER_DATE), QHeaderView::Stretch);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(3, QHeaderView::ResizeToContents);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(4, QHeaderView::ResizeToContents);
+        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(5, QHeaderView::ResizeToContents);
 
+        //        ui->tableViewSql->horizontalHeader()->setSectionResizeMode(6, QHeaderView::ResizeToContents);
         //        QDataWidgetMapper* mapper = new QDataWidgetMapper(this);
         //        mapper->setModel(model);
         //        mapper->setItemDelegate(new BookDelegate(this));
@@ -157,94 +203,17 @@ MainWindow::MainWindow(QWidget* parent)
         //        connect(ui->tableViewSql->selectionModel(), &QItemSelectionModel::currentRowChanged, mapper, &QDataWidgetMapper::setCurrentModelIndex);
 
         ui->tableViewSql->setCurrentIndex(model->index(0, 0));
-
-        //        /* После чего производим наполнение таблицы базы данных
-        //         * контентом, который будет отображаться в TableView
-        //         * */
-        //        //        for (int i = 0; i < 4; i++) {
-        //        //            QVariantList data;
-        //        //            int random = qrand(); // Получаем случайные целые числа для вставки а базу данных
-        //        //            data.append(QDate::currentDate()); // Получаем текущую дату для вставки в БД
-        //        //            data.append(QTime::currentTime()); // Получаем текущее время для вставки в БД
-        //        //            // Подготавливаем полученное случайное число для вставки в БД
-        //        //            data.append(random);
-        //        //            // Подготавливаем сообщение для вставки в базу данных
-        //        //            data.append("Получено сообщение от " + QString::number(random));
-        //        //            // Вставляем данные в БД
-        //        //            db->inserIntoTable(data);
-        //        //        }
-
-        //        /* Инициализируем модель для представления данных с заданием названий колонок */
-        //        //        setupModel(TABLE, { tr("id"), tr("Дата"), tr("Время"), tr("Рандомное число"), tr("Сообщение") });
-        //        setupModel(TABLE_SN, { "id", "Регулировщик", "Дата", "№ в мес.", "Серийные № (код)", "Заказ", "Дата Заказа" });
-
-        //        /* Инициализируем внешний вид таблицы с данными */
-        //        ui->tableViewSql->setModel(model); // Устанавливаем модель на TableView
-        //        ui->tableViewSql->setColumnHidden(0, true); // Скрываем колонку с id записей
-        //        // Разрешаем выделение строк
-        //        //        ui->tableViewSql->setSelectionBehavior(QAbstractItemView::SelectRows);
-        //        // Устанавливаем режим выделения лишь одно строки в таблице
-        //        ui->tableViewSql->setSelectionMode(QAbstractItemView::SingleSelection);
-        //        // Устанавливаем размер колонок по содержимому
-        //        ui->tableViewSql->resizeColumnsToContents();
-        //        //        ui->tableViewSql->setEditTriggers(QAbstractItemView::NoEditTriggers);
-        //        ui->tableViewSql->horizontalHeader()->setStretchLastSection(true);
-        //        model->select(); // Делаем выборку данных из таблицы
-
-        //        //        QDataWidgetMapper* mapper = new QDataWidgetMapper(this);
-        //        //        mapper->setModel(model);
-        //        //        //        mapper->setItemDelegate(new BookDelegate(this));
-        //        //        mapper->addMapping(new QLineEdit(this), model->fieldIndex(TABLE_MESSAGE));
-        //        //        //        mapper->addMapping(ui.yearEdit, model->fieldIndex("year"));
-        //        //        //        mapper->addMapping(ui.authorEdit, authorIdx);
-        //        //        //        mapper->addMapping(ui.genreEdit, genreIdx);
-        //        //        //        mapper->addMapping(ui.ratingEdit, model->fieldIndex("rating"));
-        //        //        connect(ui->tableViewSql->selectionModel(), &QItemSelectionModel::currentRowChanged, mapper, &QDataWidgetMapper::setCurrentModelIndex);
     }
-
-    ui->dateEdit->setDate(QDate::currentDate());
-    ui->dateOrder->setDate(QDate::currentDate());
-
-    connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromEncSerNum);
-
-    connect(ui->dateEdit, &QDateEdit::dateChanged, this, &MainWindow::toEncSerNum);
-    connect(ui->cbxRegul, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::toEncSerNum);
-    connect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toEncSerNum);
-
-    connect(ui->sbxOrder, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::warningOrder);
-    connect(ui->dateOrder, &QDateEdit::dateChanged, this, &MainWindow::warningOrder);
-
-    ui->tableView->setModel(new Model(ui->tableView));
-    ui->tableView->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(5, QHeaderView::Stretch);
-    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
-
-    ui->tableView->installEventFilter(this);
-
-    connect(ui->tableView, &QTableView::customContextMenuRequested, [this](const QPoint& pos) {
-        QMenu menu;
-        menu.addAction("Печать", [this] { printDialog(); });
-        menu.addAction("Копировать", [this] {
-            QClipboard* clipboard = QGuiApplication::clipboard();
-            QString text;
-            for (auto& index : ui->tableView->selectionModel()->selectedRows()) {
-                text += Model::getRecord(index.row()).toString();
-            }
-            clipboard->setText(text);
-        });
-        menu.exec(ui->tableView->mapToGlobal(pos));
-    });
-    ui->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
-
-    ui->tableView->setItemDelegate(new ItemDelegate(ui->tableView));
-
-    toEncSerNum();
-
-    QSettings settings("GenSerNum.ini", QSettings::IniFormat);
-    ui->groupBoxFormat->setChecked(settings.value("groupBoxFormat", false).toBool());
-    ui->groupBoxFormatBit->setChecked(settings.value("groupBoxFormatBit", false).toBool());
-    restoreState(settings.value("state").toByteArray());
-    restoreGeometry(settings.value("geometry").toByteArray());
+    //    {
+    //        auto w = new QTableView;
+    //        auto model = new QSqlTableModel(w);
+    //        model->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    //        model->setTable(TABLE_ORDER);
+    //        w->setModel(model);
+    //        w->setSortingEnabled(true);
+    //        w->show();
+    //        model->submitAll();
+    //    }
 }
 
 MainWindow::~MainWindow()
@@ -265,9 +234,7 @@ void MainWindow::toEncSerNum()
         Record::toSerNum(Regul::fromIndex(ui->cbxRegul->currentIndex()).id,
             ui->dateEdit->date(),
             ui->sbxSerNum->value()));
-
     tos();
-
     connect(ui->sbxSerNumCoded, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::fromEncSerNum);
 }
 
@@ -278,14 +245,53 @@ void MainWindow::fromEncSerNum()
     disconnect(ui->sbxSerNum, QOverload<int>::of(&QSpinBox::valueChanged), this, &MainWindow::toEncSerNum);
 
     auto [regId, date, serNum] = Record::fromSerNum(ui->sbxSerNumCoded->value());
-    ui->dateEdit->setDate(date);
-    ui->cbxRegul->setCurrentIndex(Regul::toIndex(regId));
-    ui->sbxSerNum->setValue(serNum);
-    if (auto index = Model::getIndex(ui->sbxSerNumCoded->value()); index > -1) {
-        ui->tableView->selectRow(index);
-        ui->tableView->showRow(index);
+    if constexpr (0) {
+        ui->dateEdit->setDate(date);
+        ui->cbxRegul->setCurrentIndex(Regul::toIndex(regId));
+        ui->sbxSerNum->setValue(serNum);
+        if (auto index = Model::getIndex(ui->sbxSerNumCoded->value()); index > -1) {
+            ui->tableView->selectRow(index);
+            ui->tableView->showRow(index);
+        } else {
+            ui->tableView->selectionModel()->clear();
+        }
     } else {
-        ui->tableView->selectionModel()->clear();
+        ui->dateEdit->setDate(date);
+        ui->cbxRegul->setCurrentIndex(Regul::toIndex(regId));
+        ui->sbxSerNum->setValue(serNum);
+
+        {
+            QSqlQuery q;
+
+            //            q.setForwardOnly(true);
+            q.prepare("SELECT * FROM " + TABLE_SN + " WHERE " + TABLE_SN_CODED + " = :ref_id1");
+            q.bindValue(":ref_id1", ui->sbxSerNumCoded->value());
+
+            if (!q.exec())
+                qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
+            if (q.next()) {
+                {
+                    auto tv = new QTableView;
+                    auto m = new QSqlQueryModel(tv);
+                    m->setQuery(q);
+                    if (m->lastError().isValid())
+                        qDebug() << m->lastError();
+                    tv->setModel(m);
+                    tv->show();
+                }
+
+                //                int index;
+                //                qDebug() << (index = q.value(0).toInt()); // << q.value(1) << q.value(2).toDate().toString("dd.MM.yyyy");
+                //                QModelIndexList mdl = model->match(model->index(0, 4), Qt::DisplayRole, ui->sbxSerNumCoded->value(), 1);
+                //                qDebug() << mdl;
+                //                //auto m = model->relationModel(depIdx);
+                //                //return m->data(m->index(ui->comboBoxDepartment->currentIndex(), m->fieldIndex(TABLE_DEP_NUMBER))).toInt();
+                //                ui->tableViewSql->selectRow(mdl.first().row());
+                //                ui->tableViewSql->showRow(mdl.first().row());
+            } else {
+                ui->tableViewSql->selectionModel()->clear();
+            }
+        }
     }
 
     tos();
@@ -297,6 +303,8 @@ void MainWindow::fromEncSerNum()
 
 void MainWindow::on_pbGen_clicked()
 {
+    if (!ui->tableView->model())
+        return;
     if (warningOrder() || QMessageBox::information(this, "A}{Tu|/|G", "Это действие нельзя отменить!!!", QMessageBox::Cancel, QMessageBox::Apply) == QMessageBox::Cancel)
         return;
 

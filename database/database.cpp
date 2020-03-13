@@ -119,6 +119,7 @@ bool DataBase::createTable()
             qDebug() << query.lastError().text();
             break;
         }
+
         if (QSqlQuery query; !query.exec("CREATE TABLE " + TABLE_ORDER
                 + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
                 + TABLE_ORD_NUM + " INTEGER NOT NULL, "
