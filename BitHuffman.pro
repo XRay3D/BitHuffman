@@ -23,6 +23,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     database/adddepartment.cpp \
     database/addadjuster.cpp \
+    database/addsernums.cpp \
     database/database.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -32,6 +33,7 @@ SOURCES += \
 HEADERS += \
     database/adddepartment.h \
     database/addadjuster.h \
+    database/addsernums.h \
     database/database.h \
     mainwindow.h \
     model.h \
@@ -40,6 +42,7 @@ HEADERS += \
 FORMS += \
     database/adddepartment.ui \
     database/addadjuster.ui \
+    database/addsernums.ui \
     mainwindow.ui
 
 # Default rules for deployment.

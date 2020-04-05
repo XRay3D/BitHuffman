@@ -1,14 +1,10 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
-#include <QDate>
 #include <QDebug>
-#include <QFile>
 #include <QObject>
-#include <QSql>
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlQuery>
+#include <QtSql>
+#include <types.h>
 
 void showError(const QSqlError& err, QWidget* w = nullptr);
 
@@ -24,30 +20,34 @@ constexpr ConstLatin1String DATABASE_HOSTNAME("DataBase");
 constexpr ConstLatin1String DATABASE_NAME("database.db");
 
 constexpr ConstLatin1String TABLE_DEPARTMENT("TableDepartment");
-constexpr ConstLatin1String TABLE_DEP_NUMBER("DepartmentNumber");
-constexpr ConstLatin1String TABLE_DEP_NAME("DepartmentName");
+constexpr ConstLatin1String TDEP_NUMBER("DepNumber");
+constexpr ConstLatin1String TDEP_NAME("DepName");
 
-constexpr ConstLatin1String TABLE_SN("TableSerNum");
-constexpr ConstLatin1String TABLE_SN_ADJ_ID("AdjusterId");
-constexpr ConstLatin1String TABLE_SN_DATE_CREATION("DateOfCreation");
-constexpr ConstLatin1String TABLE_SN_MONTH_COUNT("MonthCounter");
-constexpr ConstLatin1String TABLE_SN_CODED("CodedSerNumber");
-constexpr ConstLatin1String TABLE_SN_ORDER_NUM("OrderNumber");
-constexpr ConstLatin1String TABLE_SN_ORDER_DATE("OrderDate");
+constexpr ConstLatin1String TABLE_ENC_SER_NUM("TableEncSerNum");
+constexpr ConstLatin1String TESN_ESN_KEY("EsnValueKey");
+constexpr ConstLatin1String TESN_MONTH_COUNTER("EsnMonthCounter");
+constexpr ConstLatin1String TESN_ORDER("EsnOrder");
 
 constexpr ConstLatin1String TABLE_ADJ("TableAdjuster");
-constexpr ConstLatin1String TABLE_ADJ_DEP("Department");
-constexpr ConstLatin1String TABLE_ADJ_ID("AdjusterId");
-constexpr ConstLatin1String TABLE_ADJ_NAME("Name");
+constexpr ConstLatin1String TADJ_DEP("AdjDepartment");
+constexpr ConstLatin1String TADJ_ID_KEY("AdjIdKey");
+constexpr ConstLatin1String TADJ_NAME("AdjName");
 
 constexpr ConstLatin1String TABLE_ORDER("TableOrder");
-constexpr ConstLatin1String TABLE_ORD_NUM("OrderNymber");
-constexpr ConstLatin1String TABLE_ORD_DATE("OrderDate");
+constexpr ConstLatin1String TORD_KEY("OrdKey");
+constexpr ConstLatin1String TORD_ADJ("OrdAdjId");
+constexpr ConstLatin1String TORD_NUM("OrdNymber");
+constexpr ConstLatin1String TORD_DATE_ORDER("OrdDate");
+constexpr ConstLatin1String TORD_DATE_CREATION("OrdDateCr");
+constexpr ConstLatin1String TORD_COUNT("OrdCount");
 
 class DataBase : public QObject {
     Q_OBJECT
+    friend class MainWindow;
+    friend void Add(const Record&);
+
 public:
-    explicit DataBase(QObject* parent = 0);
+    explicit DataBase(QObject* parent = nullptr);
     ~DataBase();
     /* Методы для непосредственной работы с классом
      * Подключение к базе данных и вставка записей в таблицу
@@ -65,7 +65,13 @@ private:
     bool openDataBase();
     bool restoreDataBase();
     void closeDataBase();
-    bool createTable();
+    bool createTables();
+
+    static bool createTableAdj();
+    static bool createTableDep();
+    static bool createTableOrd();
+    static bool createTableSn();
+    static bool dropTable(const QString& name);
 };
 
 #endif // DATABASE_H

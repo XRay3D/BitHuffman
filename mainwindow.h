@@ -25,25 +25,24 @@ private slots:
     void on_pbGen_clicked();
     void on_groupBoxFormat_toggled(bool arg1);
     void on_groupBoxFormatBit_toggled(bool arg1);
+    void on_sbxSerNumCoded_valueChanged(int arg1);
+    void on_pbReset_clicked();
+    void on_pbFind_clicked();
+    void on_tvOrders_doubleClicked(const QModelIndex& index);
 
 private:
     Ui::MainWindow* ui;
-    bool skip = false;
 
-    //    QSqlRelationalTableModel* model;
     DataBase* db;
-    QSqlRelationalTableModel* model;
-    void setupModel(const QString& tableName, const QStringList& headers);
+    QSqlRelationalTableModel* modelOrder;
+    QSqlRelationalTableModel* modelSerNum;
 
-    int adjIdx;
-    int ordNumIdx;
-    int ordDateIdx;
-
-    void toEncSerNum();
-    void fromEncSerNum();
+    void toEncSerNum() {}
+    void fromEncSerNum() {}
     void printDialog();
     void tos();
-    bool warningOrder();
+    void showOrders();
+    void setOrderFilter(const QString& filter);
 };
 
 class ItemDelegate : public QStyledItemDelegate {

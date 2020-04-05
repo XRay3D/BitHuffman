@@ -137,6 +137,7 @@ QVector<int> Record::encodedSernumsV() const
     for (int sn = 0; sn < m_count; ++sn) {
         sernums << toSerNum(m_regul.id, m_date, m_sernum + sn);
     }
+    std::sort(sernums.begin(),sernums.end());
     return sernums;
 }
 

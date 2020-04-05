@@ -3,90 +3,149 @@
 #include <QDataStream>
 #include <QFile>
 #include <QtSql>
+#include <database/addsernums.h>
 
 Model* Model::m_instance = nullptr;
 
 void Add(const Record& record)
 {
-    static bool fl{};
-    if (fl) {
+    static bool fl {};
+    if (!fl) {
         fl = true;
-        QSqlQuery q;
-        //        q.prepare("DELETE FROM " + TABLE_SN + " WHERE id > 0");
-        //        if (!q.exec())
-        //            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
-
-        //        q.prepare("DELETE FROM " + TABLE_ORDER + " WHERE id > 0");
-        //        if (!q.exec())
-        //            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
-
-        qDebug() << "DELETE";
-
-        q.setForwardOnly(true);
-        q.prepare("DROP TABLE IF EXISTS " + TABLE_SN);
-        if (!q.exec())
-            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
-
-        if (QSqlQuery query; !query.exec("CREATE TABLE " + TABLE_SN
-                + " ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
-                + TABLE_SN_ADJ_ID + " INTEGER NOT NULL,"
-                + TABLE_SN_DATE_CREATION + " DATE NOT NULL,"
-                + TABLE_SN_MONTH_COUNT + " INTEGER NOT NULL,"
-                + TABLE_SN_CODED + " INTEGER NOT NULL UNIQUE,"
-                + TABLE_SN_ORDER_NUM + " INTEGER NOT NULL,"
-                + TABLE_SN_ORDER_DATE + " INTEGER NOT NULL"
-                                        " )")) {
-            qDebug() << "DataBase: error of create " << TABLE_SN;
-            qDebug() << query.lastError().text();
-        }
+        DataBase::createTableOrd();
+        DataBase::createTableSn();
     }
-    int id;
-    {
-        QSqlQuery q;
-        q.setForwardOnly(true);
-        q.prepare("SELECT * FROM " + TABLE_ORDER
-            + " WHERE " + TABLE_ORD_NUM + " = :ref_id1"
-            + " AND " + TABLE_ORD_DATE + " = :ref_id2");
-        q.bindValue(":ref_id1", record.order());
-        q.bindValue(":ref_id2", record.orderDate());
+    //AddSerNums add;
+    //add.addEncSerNums(record.regul().id, record.date(), record.order(), record.orderDate(), record.count());
+    int id = 0;
+    QSqlTableModel m;
+    do {
+        m.setTable(TABLE_ORDER);
+        if (!m.select())
+            break;
+        m.setFilter(QString(TORD_NUM + "=%1 AND " + TORD_DATE_ORDER + "='%2' AND " + TORD_ADJ + "='%3' AND " + TORD_DATE_CREATION + "='%4'")
+                        .arg(record.order())
+                        .arg(record.orderDate().toString("yyyy-MM-dd"))
+                        .arg(record.regul().id)
+                        .arg(record.date().toString("yyyy-MM-dd")));
 
-        if (!q.exec())
-            qDebug() << "SQL QUERY ERROR:" << q.lastError().text();
-
-        if /*while*/ (q.next()) {
-            qDebug() << (id = q.value(0).toInt()) << q.value(1) << q.value(2).toDate().toString("dd.MM.yyyy");
+        if (m.rowCount()) {
+            id = m.record(0).value(TORD_KEY).toInt(); //, m.record(0).value(TABLE_ORD_CTY).toInt() };
+            m.setData(m.index(0, 5), m.data(m.index(0, 5)).toInt() + record.count());
+            m.submit();
         } else {
-            if (!q.prepare("INSERT INTO " + TABLE_ORDER + "(" + TABLE_ORD_NUM + ", " + TABLE_ORD_DATE + ") VALUES(?, ?)"))
-                qDebug() << q.lastError().text();
-            q.addBindValue(record.order());
-            q.addBindValue(record.orderDate());
-            if (!q.exec())
-                qDebug() << q.lastError().text();
+            QSqlRecord r(m.record());
+            r.setValue(1, record.regul().id);
+            r.setValue(2, record.date());
+            r.setValue(3, record.order());
+            r.setValue(4, record.orderDate());
+            r.setValue(5, record.count());
+            if (!m.insertRecord(-1, r))
+                break;
+            if (!m.select())
+                break;
+            if (m.rowCount())
+                id = m.record(0).value(TORD_KEY).toInt(); //, m.record(0).value(TABLE_ORD_CTY).toInt() };
         }
-    }
+    } while (0);
     {
-        QSqlQuery q;
+        if (!id) {
+            qDebug() << "orderId" << id;
+            //QMessageBox::warning(this, "", "order == 0");
+            return;
+        }
 
-        for (int sn : record.encodedSernumsV()) {
-            if (!q.prepare("INSERT INTO " + TABLE_SN + "("
-                    + TABLE_SN_ADJ_ID + ", "
-                    + TABLE_SN_DATE_CREATION + ", "
-                    + TABLE_SN_MONTH_COUNT + ", "
-                    + TABLE_SN_CODED + ", "
-                    + TABLE_SN_ORDER_NUM + ", "
-                    + TABLE_SN_ORDER_DATE + ") VALUES(?, ?, ?, ?, ?, ?)"))
-                qDebug() << q.lastError().text();
-            auto [reg, dat, ser] = Record::fromSerNum(sn);
-            q.addBindValue(reg);
-            q.addBindValue(dat);
-            q.addBindValue(ser);
-            q.addBindValue(sn);
-            q.addBindValue(id);
-            q.addBindValue(id);
-            if (!q.exec())
-                qDebug() << q.lastError().text();
+        int monthCount = 0;
+        { // monthCount
+            QSqlQueryModel m;
+            QDate date { record.date().year(), record.date().month(), 1 };
+            do {
+                QSqlQuery q(QString("SELECT SUM(" + TORD_COUNT + ") FROM " + TABLE_ORDER
+                    + " WHERE " + TORD_ADJ + " = '%1' AND " + TORD_DATE_CREATION + " BETWEEN '%2' AND '%5'")
+                                .arg(record.regul().id)
+                                .arg(date.toString("yyyy-MM-dd"))
+                                .arg(date.addMonths(1).addDays(-1).toString("yyyy-MM-dd")));
+                if (!q.exec())
+                    break;
+                m.setQuery(q);
+                monthCount = m.record(0).value(0).toInt();
+            } while (0);
+        }
+
+        m.setTable(TABLE_ENC_SER_NUM);
+        m.select();
+
+        monthCount = record.sernum();
+
+        int min = Record::toSerNum(record.regul().id, record.date(), monthCount);
+        int max = Record::toSerNum(record.regul().id, record.date(), monthCount + record.count() - 1);
+
+        auto key { record.encodedSernumsV() };
+        QVector<int> test;
+        test.reserve(record.count());
+        for (int i = min; i <= max; ++i) {
+            test << i;
+            QSqlRecord r(m.record());
+            r.setValue(0, i);
+            r.setValue(1, ++monthCount);
+            r.setValue(2, id);
+            if (!m.insertRecord(0, r)) {
+                qDebug() << "SN" << i << id << m.lastError();
+                return;
+            }
+        }
+        std::sort(test.begin(), test.end());
+        if (key != test) {
+            qDebug() << key;
+            qDebug() << test;
+            exit(88);
         }
     }
+    //    int id = 0;
+    //    {
+    //        QSqlTableModel m;
+    //        m.setTable(TABLE_ORDER);
+    //        m.setFilter(QString(TORD_NUM + "='%1' and " + TORD_DATE_ORDER + "='%2'").arg(record.order()).arg(record.orderDate().toString("yyyy-MM-dd")));
+    //        m.select();
+    //        if (m.rowCount()) {
+    //            id = m.data(m.index(0, 0)).toInt();
+    //            m.setData(m.index(0, 3), m.data(m.index(0, 3)).toInt() + record.count());
+    //            m.submit();
+    //        } else {
+    //            QSqlRecord r(m.record());
+    //            r.setValue(1, record.order());
+    //            r.setValue(2, record.orderDate());
+    //            r.setValue(3, record.count());
+    //            if (!m.insertRecord(m.rowCount(), r)) {
+    //                qDebug() << m.lastError().text();
+    //                exit(10);
+    //            }
+    //            m.select();
+    //            id = m.record(0).value("id").toInt();
+    //        }
+    //    }
+    //    qDebug() << id;
+    //    {
+    //        //        QSqlTableModel m;
+    //        //        m.setTable(VIEW_SN);
+    //        //        //m.setEditStrategy(QSqlTableModel::OnManualSubmit);
+    //        //        m.select();
+    //        //        for (int sn : record.encodedSernumsV()) {
+    //        //            QSqlRecord r(m.record());
+    //        //            auto [reg, dat, ser] = Record::fromSerNum(sn);
+    //        //            r.setValue(1, reg);
+    //        //            r.setValue(2, record.date());
+    //        //            r.setValue(3, ser);
+    //        //            r.setValue(4, sn);
+    //        //            r.setValue(5, id);
+    //        //            r.setValue(6, id);
+    //        //            if (!m.insertRecord(-1, r)) {
+    //        //                qDebug() << m.lastError().text();
+    //        //                exit(10);
+    //        //            }
+    //        //            //m.submit();
+    //        //        }
+    //    }
 }
 
 void Model::save()
@@ -115,10 +174,10 @@ void Model::restore()
         QDataStream stream(&file);
         stream >> m_data;
 
-        std::sort(m_data.begin(), m_data.end(), [](const Record& r1, const Record& r2) {
-            return std::tuple{ r1.regul().id, r1.date().year(), r1.date().month(), r1.sernum() }
-            < std::tuple{ r2.regul().id, r2.date().year(), r2.date().month(), r2.sernum() };
-        });
+        //        std::sort(m_data.begin(), m_data.end(), [](const Record& r1, const Record& r2) {
+        //            return std::tuple { r1.regul().id, r1.date().year(), r1.date().month(), r1.sernum() }
+        //            < std::tuple { r2.regul().id, r2.date().year(), r2.date().month(), r2.sernum() };
+        //        });
 
         //        QFile file("database.cache");
         //        if (file.open(QIODevice::ReadOnly)) {
@@ -137,7 +196,7 @@ void Model::restore()
 Model::Model(QObject* parent)
 
     : QAbstractTableModel(parent)
-    , m_headerData{
+    , m_headerData {
         "Регулировщик",
         "Дата",
         "Кол-во в мес.",
@@ -169,15 +228,15 @@ void Model::addRecord(const Record& record)
     m_instance->endInsertRows();
 }
 
-void Model::update(const Record& record, int index)
+void Model::update(const Record& record, int /*index*/)
 {
     Add(record);
-    for (int sn : record.encodedSernumsV()) {
-        m_encSerNumRowsCache[sn] = index;
-    }
-    m_lastSerNumCache[{ record.regul().id, { record.date().year(), record.date().month(), 1 } }] += record.count();
-    m_ordersCache[{ record.order(), record.orderDate() }] = index;
-    save();
+    //    for (int sn : record.encodedSernumsV()) {
+    //        m_encSerNumRowsCache[sn] = index;
+    //    }
+    //    m_lastSerNumCache[{ record.regul().id, { record.date().year(), record.date().month(), 1 } }] += record.count();
+    //    m_ordersCache[{ record.order(), record.orderDate() }] = index;
+    //    save();
 }
 
 Record Model::getRecord(int id)
@@ -220,7 +279,7 @@ int Model::columnCount(const QModelIndex& /*parent*/) const
 
 QVariant Model::data(const QModelIndex& index, int role) const
 {
-    const int row{ index.row() };
+    const int row { index.row() };
     switch (role) {
     case Qt::ToolTipRole:
     case Qt::DisplayRole:

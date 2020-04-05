@@ -30,9 +30,11 @@ int main(int argc, char* argv[])
 
     translation(&a);
 
-    QFont f;
-    f.setPointSizeF(10);
-    a.setFont(f);
+    if (/* DISABLES CODE */ (0)) {
+        QFont f;
+        f.setPointSizeF(10);
+        a.setFont(f);
+    }
 
     QElapsedTimer t;
     t.start();

@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AddSerNums</class>
+ <widget class="QDialog" name="AddSerNums">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>472</width>
+    <height>105</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Данные </string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="4">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="0">
+    <widget class="QSpinBox" name="sbxOrderNumber">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>1000000</number>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QSpinBox" name="sbxOrderCount">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <property name="minimum">
+      <number>1</number>
+     </property>
+     <property name="maximum">
+      <number>1024</number>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="5">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Дата
+изготовления</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="4">
+    <widget class="QLabel" name="label_3">
+     <property name="text">
+      <string>Регулировщик</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_6">
+     <property name="text">
+      <string>№ заказа</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="4">
+    <widget class="QComboBox" name="cbxAdjuster"/>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLabel" name="label_7">
+     <property name="text">
+      <string>Дата заказа</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QDateEdit" name="deOrder">
+     <property name="minimumDateTime">
+      <datetime>
+       <hour>0</hour>
+       <minute>0</minute>
+       <second>0</second>
+       <year>2019</year>
+       <month>1</month>
+       <day>1</day>
+      </datetime>
+     </property>
+     <property name="maximumDate">
+      <date>
+       <year>2030</year>
+       <month>8</month>
+       <day>31</day>
+      </date>
+     </property>
+     <property name="minimumDate">
+      <date>
+       <year>2019</year>
+       <month>1</month>
+       <day>1</day>
+      </date>
+     </property>
+     <property name="displayFormat">
+      <string>dd.MM.yyyy г.</string>
+     </property>
+     <property name="calendarPopup">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
+    <widget class="QLabel" name="label_2">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="text">
+      <string>Кол-во
+изделий в заказе</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="5">
+    <widget class="QDateEdit" name="deCreation">
+     <property name="frame">
+      <bool>true</bool>
+     </property>
+     <property name="maximumDate">
+      <date>
+       <year>2030</year>
+       <month>8</month>
+       <day>31</day>
+      </date>
+     </property>
+     <property name="minimumDate">
+      <date>
+       <year>2020</year>
+       <month>1</month>
+       <day>1</day>
+      </date>
+     </property>
+     <property name="displayFormat">
+      <string>dd.MM.yyyy г.</string>
+     </property>
+     <property name="calendarPopup">
+      <bool>true</bool>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3" rowspan="2">
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="6">
+    <widget class="QDialogButtonBox" name="buttonBox">
+     <property name="focusPolicy">
+      <enum>Qt::TabFocus</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <tabstops>
+  <tabstop>sbxOrderNumber</tabstop>
+  <tabstop>deOrder</tabstop>
+  <tabstop>sbxOrderCount</tabstop>
+  <tabstop>deCreation</tabstop>
+  <tabstop>cbxAdjuster</tabstop>
+  <tabstop>buttonBox</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>accepted()</signal>
+   <receiver>AddSerNums</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>321</x>
+     <y>111</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>321</x>
+     <y>65</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonBox</sender>
+   <signal>rejected()</signal>
+   <receiver>AddSerNums</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>321</x>
+     <y>111</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>321</x>
+     <y>65</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>

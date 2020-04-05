@@ -20,9 +20,8 @@ public:
         case 0: {
             QSpinBox* sb = new QSpinBox(parent);
             sb->setFrame(false);
-            sb->setMaximum(index.data().toInt());
-            sb->setMinimum(index.data().toInt());
             sb->setButtonSymbols(QSpinBox::NoButtons);
+            sb->setReadOnly(true);
             return sb;
         }
         case 1: {
@@ -49,8 +48,8 @@ AddDepartment::AddDepartment(QWidget* parent)
     model->setTable(TABLE_DEPARTMENT);
 
     // Set the header captions:
-    model->setHeaderData(model->fieldIndex(TABLE_DEP_NUMBER), Qt::Horizontal, "№ подразделения");
-    model->setHeaderData(model->fieldIndex(TABLE_DEP_NAME), Qt::Horizontal, "Название");
+    model->setHeaderData(model->fieldIndex(TDEP_NUMBER), Qt::Horizontal, "№ подразделения");
+    model->setHeaderData(model->fieldIndex(TDEP_NAME), Qt::Horizontal, "Название");
 
     // Populate the model:
     if (!model->select()) {
@@ -67,8 +66,10 @@ AddDepartment::AddDepartment(QWidget* parent)
     ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     // Lock and prohibit resizing of the width of the rating column:
-    ui->tableView->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TABLE_DEP_NUMBER), QHeaderView::ResizeToContents);
-    ui->tableView->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TABLE_DEP_NAME), QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TDEP_NUMBER), QHeaderView::ResizeToContents);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(model->fieldIndex(TDEP_NAME), QHeaderView::Stretch);
+    ui->tableView->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+    ui->tableView->verticalHeader()->setDefaultSectionSize(QFontMetrics(QFont()).height());
     ui->tableView->verticalHeader()->setVisible(false);
     ui->tableView->setEditTriggers(QAbstractItemView::DoubleClicked);
 
@@ -76,11 +77,11 @@ AddDepartment::AddDepartment(QWidget* parent)
     mapper->setModel(model);
     mapper->setSubmitPolicy(QDataWidgetMapper::ManualSubmit);
     //    mapper->setItemDelegate(new BookDelegate(this));
-    mapper->addMapping(ui->spinBoxNumber, model->fieldIndex(TABLE_DEP_NUMBER));
+    mapper->addMapping(ui->spinBoxNumber, model->fieldIndex(TDEP_NUMBER));
 
     connect(ui->tableView->selectionModel(), &QItemSelectionModel::currentRowChanged, mapper, &QDataWidgetMapper::setCurrentModelIndex);
 
-    ui->tableView->setCurrentIndex(model->index(0, 0));
+    //ui->tableView->setCurrentIndex(model->index(0, 0));
 }
 
 AddDepartment::~AddDepartment()
@@ -92,7 +93,7 @@ void AddDepartment::on_pushButtonAdd_clicked()
 {
     QSqlQuery q;
 
-    if (!q.prepare("INSERT INTO " + TABLE_DEPARTMENT + "(" + TABLE_DEP_NUMBER + ", " + TABLE_DEP_NAME + ") VALUES(?, ?)")) {
+    if (!q.prepare("INSERT INTO " + TABLE_DEPARTMENT + "(" + TDEP_NUMBER + ", " + TDEP_NAME + ") VALUES(?, ?)")) {
         showError(q.lastError());
         return;
     }
@@ -114,15 +115,16 @@ void AddDepartment::on_pushButtonAdd_clicked()
 void AddDepartment::on_pushButtonDel_clicked()
 {
     auto selectedRows = ui->tableView->selectionModel()->selectedRows();
-    if (selectedRows.isEmpty() || QMessageBox::question(this, "", "Вы уверены?", QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
+    if (selectedRows.isEmpty() || QMessageBox::question(this, "", "Вы уверены?\nДанное действо удалит также регулировщиков.", QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
         return;
 
+    const int id { selectedRows.first().data().toInt() };
     // Удаление строки из базы данных будет производитсья с помощью SQL-запроса
     QSqlQuery q;
 
     // Удаление производим по id записи, который передается в качестве аргумента функции
-    q.prepare("DELETE FROM " + TABLE_DEPARTMENT + " WHERE " + TABLE_DEP_NUMBER + "= :ID ;");
-    q.bindValue(":ID", ui->tableView->selectionModel()->selectedRows().first().data());
+    q.prepare("DELETE FROM " + TABLE_DEPARTMENT + " WHERE " + TDEP_NUMBER + "= :ID ;");
+    q.bindValue(":ID", id);
 
     // Выполняем удаление
     if (!q.exec()) {
@@ -132,5 +134,18 @@ void AddDepartment::on_pushButtonDel_clicked()
     if (!model->select()) {
         showError(model->lastError());
         return;
+    }
+    { // Удаление строки из базы данных будет производитсья с помощью SQL-запроса
+        QSqlQuery q;
+
+        // Удаление производим по id записи, который передается в качестве аргумента функции
+        q.prepare("DELETE FROM " + TABLE_ADJ + " WHERE " + TADJ_DEP + "= :ID ;");
+        q.bindValue(":ID", id);
+
+        // Выполняем удаление
+        if (!q.exec()) {
+            showError(q.lastError());
+            return;
+        }
     }
 }
