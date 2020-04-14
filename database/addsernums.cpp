@@ -93,6 +93,28 @@ void AddSerNums::testOrder()
     }
 }
 
+void AddSerNums::addSerNums(int orderId, const int count)
+{
+    // add codded serial numbers
+    int counter {};
+    int monthCount = 1;
+    QSqlTableModel m;
+    m.setTable(TABLE_ENC_SER_NUM);
+    m.select();
+    auto r { m.record() };
+    while (counter < count) {
+        int esnKey = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount);
+        r.setValue(TESN_ESN_KEY, esnKey);
+        r.setValue(TESN_MONTH_COUNTER, monthCount);
+        r.setValue(TESN_ORDER, orderId);
+        ++monthCount;
+        if (!m.insertRecord(-1, r))
+            qDebug() << "SN" << esnKey << m.lastError();
+        else
+            ++counter;
+    }
+}
+
 void AddSerNums::accept()
 {
     auto monthCount_ { monthCount() };
@@ -110,24 +132,25 @@ void AddSerNums::accept()
             orderModel.setData(index, ui->sbxOrderCount->value());
             orderModel.submit();
             id = orderModel.record(0).value(TORD_KEY).toInt();
-            { // add codded serial numbers
-                QSqlTableModel m;
-                m.setTable(TABLE_ENC_SER_NUM);
-                m.select();
-                int min = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + 1);
-                int max = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + ui->sbxOrderCount->value() - ui->sbxOrderCount->minimum());
-                qDebug() << min << max;
-                auto r { m.record() };
-                for (int i = min; i <= max; ++i) {
-                    r.setValue(TESN_ESN_KEY, i);
-                    r.setValue(TESN_MONTH_COUNTER, ++monthCount_);
-                    r.setValue(TESN_ORDER, id);
-                    if (!m.insertRecord(-1, r)) {
-                        qDebug() << "SN" << i << id << m.lastError();
-                        return;
-                    }
-                }
-            }
+            addSerNums(id, ui->sbxOrderCount->value() - ui->sbxOrderCount->minimum());
+            //            { // add codded serial numbers
+            //                QSqlTableModel m;
+            //                m.setTable(TABLE_ENC_SER_NUM);
+            //                m.select();
+            //                int min = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + 1);
+            //                int max = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + ui->sbxOrderCount->value() - ui->sbxOrderCount->minimum());
+            //                qDebug() << min << max;
+            //                auto r { m.record() };
+            //                for (int i = min; i <= max; ++i) {
+            //                    r.setValue(TESN_ESN_KEY, i);
+            //                    r.setValue(TESN_MONTH_COUNTER, ++monthCount_);
+            //                    r.setValue(TESN_ORDER, id);
+            //                    if (!m.insertRecord(-1, r)) {
+            //                        qDebug() << "SN" << i << id << m.lastError();
+            //                        return;
+            //                    }
+            //                }
+            //            }
             setOrderFilter(orderModel.filter());
             QDialog::accept();
         }
@@ -156,24 +179,7 @@ void AddSerNums::accept()
                 return;
             }
         }
-        { // add codded serial numbers
-            QSqlTableModel m;
-            m.setTable(TABLE_ENC_SER_NUM);
-            m.select();
-            int min = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + 1);
-            int max = Record::toSerNum(adjId(), ui->deCreation->date(), monthCount_ + ui->sbxOrderCount->value());
-            qDebug() << min << max;
-            auto r { m.record() };
-            for (int i = min; i <= max; ++i) {
-                r.setValue(TESN_ESN_KEY, i);
-                r.setValue(TESN_MONTH_COUNTER, ++monthCount_);
-                r.setValue(TESN_ORDER, id);
-                if (!m.insertRecord(-1, r)) {
-                    qDebug() << "SN" << i << id << m.lastError();
-                    return;
-                }
-            }
-        }
+        addSerNums(id, ui->sbxOrderCount->value());
         setOrderFilter(orderModel.filter());
         QDialog::accept();
     }
