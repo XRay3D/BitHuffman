@@ -70,7 +70,7 @@ MainWindow::MainWindow(QWidget* parent)
         exit(0);
 
     {
-        modelSerNum = new QSqlRelationalTableModel(ui->tvSerNums);
+        modelSerNum = new QSqlTableModel(ui->tvSerNums);
         modelSerNum->setEditStrategy(QSqlTableModel::OnManualSubmit);
         modelSerNum->setTable(TABLE_ENC_SER_NUM /*VIEW_SN*/);
         ui->tvSerNums->setModel(modelSerNum);
@@ -193,7 +193,7 @@ void MainWindow::printDialog()
 {
     QString text;
 
-    auto indexes { ui->tvOrders->selectionModel()->selectedRows() };
+    auto indexes{ ui->tvOrders->selectionModel()->selectedRows() };
     if (indexes.isEmpty()) {
         QMessageBox::information(this, "", "Нет выделенной строки заказа для печати.");
         return;
@@ -320,10 +320,10 @@ void MainWindow::on_pbFind_clicked()
 
 void MainWindow::on_tvOrders_doubleClicked(const QModelIndex& index)
 {
-    auto rec { modelOrder->record() };
-    QString data { index.data(Qt::EditRole).toString() };
-    const int column { index.column() };
-    if (auto r { modelOrder->relation(column) }; r.isValid()) {
+    auto rec{ modelOrder->record() };
+    QString data{ index.data(Qt::EditRole).toString() };
+    const int column{ index.column() };
+    if (auto r{ modelOrder->relation(column) }; r.isValid()) {
         QSqlTableModel m;
         m.setTable(modelOrder->tableName());
         modelOrder->setFilter(QString("%1 IN(SELECT %2 FROM %3 WHERE %4 = '%5')")
@@ -368,8 +368,8 @@ void MainWindow::showOrders()
     tv->setModel(m);
 
     connect(tv, &QTableView::doubleClicked, [m](const QModelIndex& index) {
-        auto r { m->record() };
-        QString data { index.data().toString() };
+        auto r{ m->record() };
+        QString data{ index.data().toString() };
         m->setFilter(QString("%1='%2'").arg(r.fieldName(index.column())).arg(data));
         m->select();
     });

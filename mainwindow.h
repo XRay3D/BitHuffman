@@ -35,7 +35,7 @@ private:
 
     DataBase* db;
     QSqlRelationalTableModel* modelOrder;
-    QSqlRelationalTableModel* modelSerNum;
+    QSqlTableModel* modelSerNum;
 
     void toEncSerNum() {}
     void fromEncSerNum() {}

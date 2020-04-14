@@ -9,7 +9,7 @@ Model* Model::m_instance = nullptr;
 
 void Add(const Record& record)
 {
-    static bool fl {};
+    static bool fl{};
     if (!fl) {
         fl = true;
         DataBase::createTableOrd();
@@ -58,7 +58,7 @@ void Add(const Record& record)
         int monthCount = 0;
         { // monthCount
             QSqlQueryModel m;
-            QDate date { record.date().year(), record.date().month(), 1 };
+            QDate date{ record.date().year(), record.date().month(), 1 };
             do {
                 QSqlQuery q(QString("SELECT SUM(" + TORD_COUNT + ") FROM " + TABLE_ORDER
                     + " WHERE " + TORD_ADJ + " = '%1' AND " + TORD_DATE_CREATION + " BETWEEN '%2' AND '%5'")
@@ -80,14 +80,14 @@ void Add(const Record& record)
         int min = Record::toSerNum(record.regul().id, record.date(), monthCount);
         int max = Record::toSerNum(record.regul().id, record.date(), monthCount + record.count() - 1);
 
-        auto key { record.encodedSernumsV() };
+        auto key{ record.encodedSernumsV() };
         QVector<int> test;
         test.reserve(record.count());
         for (int i = min; i <= max; ++i) {
             test << i;
             QSqlRecord r(m.record());
             r.setValue(0, i);
-            r.setValue(1, ++monthCount);
+            r.setValue(1, monthCount++);
             r.setValue(2, id);
             if (!m.insertRecord(0, r)) {
                 qDebug() << "SN" << i << id << m.lastError();
@@ -101,51 +101,6 @@ void Add(const Record& record)
             exit(88);
         }
     }
-    //    int id = 0;
-    //    {
-    //        QSqlTableModel m;
-    //        m.setTable(TABLE_ORDER);
-    //        m.setFilter(QString(TORD_NUM + "='%1' and " + TORD_DATE_ORDER + "='%2'").arg(record.order()).arg(record.orderDate().toString("yyyy-MM-dd")));
-    //        m.select();
-    //        if (m.rowCount()) {
-    //            id = m.data(m.index(0, 0)).toInt();
-    //            m.setData(m.index(0, 3), m.data(m.index(0, 3)).toInt() + record.count());
-    //            m.submit();
-    //        } else {
-    //            QSqlRecord r(m.record());
-    //            r.setValue(1, record.order());
-    //            r.setValue(2, record.orderDate());
-    //            r.setValue(3, record.count());
-    //            if (!m.insertRecord(m.rowCount(), r)) {
-    //                qDebug() << m.lastError().text();
-    //                exit(10);
-    //            }
-    //            m.select();
-    //            id = m.record(0).value("id").toInt();
-    //        }
-    //    }
-    //    qDebug() << id;
-    //    {
-    //        //        QSqlTableModel m;
-    //        //        m.setTable(VIEW_SN);
-    //        //        //m.setEditStrategy(QSqlTableModel::OnManualSubmit);
-    //        //        m.select();
-    //        //        for (int sn : record.encodedSernumsV()) {
-    //        //            QSqlRecord r(m.record());
-    //        //            auto [reg, dat, ser] = Record::fromSerNum(sn);
-    //        //            r.setValue(1, reg);
-    //        //            r.setValue(2, record.date());
-    //        //            r.setValue(3, ser);
-    //        //            r.setValue(4, sn);
-    //        //            r.setValue(5, id);
-    //        //            r.setValue(6, id);
-    //        //            if (!m.insertRecord(-1, r)) {
-    //        //                qDebug() << m.lastError().text();
-    //        //                exit(10);
-    //        //            }
-    //        //            //m.submit();
-    //        //        }
-    //    }
 }
 
 void Model::save()
@@ -196,7 +151,7 @@ void Model::restore()
 Model::Model(QObject* parent)
 
     : QAbstractTableModel(parent)
-    , m_headerData {
+    , m_headerData{
         "Регулировщик",
         "Дата",
         "Кол-во в мес.",
@@ -279,7 +234,7 @@ int Model::columnCount(const QModelIndex& /*parent*/) const
 
 QVariant Model::data(const QModelIndex& index, int role) const
 {
-    const int row { index.row() };
+    const int row{ index.row() };
     switch (role) {
     case Qt::ToolTipRole:
     case Qt::DisplayRole:

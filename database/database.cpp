@@ -90,7 +90,8 @@ bool DataBase::openDataBase()
 void DataBase::closeDataBase()
 {
     db.close();
-    QFile(DATABASE_NAME).remove();
+    if (qApp->applicationDirPath().contains("BitHuffman/bin"))
+        QFile(DATABASE_NAME).remove();
 }
 
 /* Метод для создания таблицы в базе данных */

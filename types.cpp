@@ -12,7 +12,7 @@ QMap<int, int> Regul::revRegul;
 
 typedef union {
     struct {
-        unsigned ser : 10; //  (serNum - 1);
+        unsigned ser : 10; //  (serNum - 1); in month
         unsigned dat : 7; // (date.year() - 2020) << OffsetYear;
         unsigned reg : 6; // regId << OffsetRegul;
         unsigned : 9; // regId << OffsetRegul;

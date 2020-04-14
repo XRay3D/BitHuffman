@@ -8,6 +8,8 @@ CONFIG += c++17
 
 DESTDIR = $$_PRO_FILE_PWD_/bin
 
+RC_FILE = myapp.rc
+
 
 # The following define makes your compiler emit warnings if you use
 # any Qt feature that has been marked deprecated (the exact warnings
@@ -37,7 +39,8 @@ HEADERS += \
     database/database.h \
     mainwindow.h \
     model.h \
-    types.h
+    types.h \
+    version.h
 
 FORMS += \
     database/adddepartment.ui \
