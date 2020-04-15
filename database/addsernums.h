@@ -24,6 +24,7 @@ private:
     QSqlTableModel orderModel;
 
     void testOrder();
+    void addSerNums(int orderId, const int count);
 
 signals:
     void setOrderFilter(const QString& filter);
