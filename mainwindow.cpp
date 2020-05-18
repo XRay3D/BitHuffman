@@ -120,7 +120,7 @@ MainWindow::MainWindow(QWidget* parent)
         //    model->setRelation(ordNumIdx, QSqlRelation(TABLE_ORDER, "id", TABLE_ORD_NUM));
 
         // Set the localized header captions:
-        modelOrder->setHeaderData(modelOrder->fieldIndex(TORD_ADJ), Qt::Horizontal, "Регулировщик");
+        modelOrder->setHeaderData(modelOrder->fieldIndex(TORD_ADJ), Qt::Horizontal, "Исполнитель");
         modelOrder->setHeaderData(modelOrder->fieldIndex(TORD_COUNT), Qt::Horizontal, "Кол-во.");
         modelOrder->setHeaderData(modelOrder->fieldIndex(TORD_DATE_ORDER), Qt::Horizontal, "Дата заказа");
         modelOrder->setHeaderData(modelOrder->fieldIndex(TORD_DATE_CREATION), Qt::Horizontal, "Дата изг.");
@@ -150,6 +150,9 @@ MainWindow::MainWindow(QWidget* parent)
                 ui->sbxSerNumCoded->setValue(modelSerNum->data(modelSerNum->index(0, 0)).toInt());
             });
     }
+
+    modelSerNum->setFilter(QString("%1='%2'").arg(TESN_ORDER).arg(-1));
+    //ui->tvOrders->selectRow(0);
 
     if (0) {
         //        QDataWidgetMapper* mapper = new QDataWidgetMapper(this);
@@ -309,6 +312,7 @@ void MainWindow::on_sbxSerNumCoded_valueChanged(int arg1)
 void MainWindow::on_pbReset_clicked()
 {
     modelOrder->setFilter("");
+    modelSerNum->setFilter(QString("%1='%2'").arg(TESN_ORDER).arg(-1));
 }
 
 void MainWindow::on_pbFind_clicked()

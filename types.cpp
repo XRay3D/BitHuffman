@@ -39,14 +39,14 @@ Regul::Regul(const QStringList& list)
     if (list.size() < 3) {
         QMessageBox::warning(nullptr,
             "Ошибка",
-            "Запись данных в файле \"регулировщики.csv\" не соотвнтствует формату:\n\"№ регулировщика;Отдел;Ф.И.О.\"");
+            "Запись данных в файле \"исполнители.csv\" не соотвнтствует формату:\n\"№ исполнителя;Отдел;Ф.И.О.\"");
         exit(0);
     }
 }
 
 void Regul::load(QComboBox* cbx)
 {
-    QFile file("регулировщики.csv");
+    QFile file("исполнители.csv");
     if (file.open(QIODevice::ReadOnly)) {
         QTextStream in(&file);
         //in.setCodec(QTextCodec::codecForName("Windows-1251"/*"UTF-8"*/));
@@ -61,7 +61,7 @@ void Regul::load(QComboBox* cbx)
             } else {
                 QMessageBox::warning(nullptr,
                     "Ошибка",
-                    "В файле \"регулировщики.csv\" содержатся разные записи под одним номером.");
+                    "В файле \"исполнители.csv\" содержатся разные записи под одним номером.");
                 exit(0);
             }
             //            ui->cbxRegul->addItem(Regul::regul[index].name);
@@ -71,7 +71,7 @@ void Regul::load(QComboBox* cbx)
     } else {
         QMessageBox::warning(nullptr,
             "Ошибка",
-            "Не удалось загрузить список регулиловщиков из файла:\n\"регулировщики.csv\"");
+            "Не удалось загрузить список регулиловщиков из файла:\n\"исполнители.csv\"");
         exit(0);
     }
 }

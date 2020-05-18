@@ -65,7 +65,7 @@ AddAdjuster::AddAdjuster(QWidget* parent)
     //    model->setRelation(genreIdx, QSqlRelation("genres", "id", "name"));
 
     // Set the header captions:
-    model->setHeaderData(model->fieldIndex(TADJ_ID_KEY), Qt::Horizontal, "№ регулировщика");
+    model->setHeaderData(model->fieldIndex(TADJ_ID_KEY), Qt::Horizontal, "№ исполнителя");
     model->setHeaderData(model->fieldIndex(TADJ_DEP), Qt::Horizontal, "Подразделение");
     model->setHeaderData(model->fieldIndex(TADJ_NAME), Qt::Horizontal, "Имя");
 

@@ -152,7 +152,7 @@ Model::Model(QObject* parent)
 
     : QAbstractTableModel(parent)
     , m_headerData{
-        "Регулировщик",
+        "Исполнитель",
         "Дата",
         "Кол-во в мес.",
         "Серийные № (код)",

@@ -28,6 +28,7 @@ AddSerNums::AddSerNums(QWidget* parent)
     }
 
     ui->buttonBox->button(QDialogButtonBox::Reset)->setText("Удалить заказ");
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setText("Сгенерировать номера");
 
     connect(ui->buttonBox->button(QDialogButtonBox::Reset), &QPushButton::clicked, [this]() {
         if (QMessageBox::question(this, "", "Удалить данный заказ из базы вместе с серийными номерами?", QMessageBox::No, QMessageBox::Yes) == QMessageBox::Yes) {
@@ -155,7 +156,7 @@ void AddSerNums::accept()
 {
     auto monthCount_{ monthCount() };
     if (monthCount_ + ui->sbxOrderCount->value() - ui->sbxOrderCount->minimum() > 1024) {
-        QMessageBox::warning(this, "", "Превышено кол-во изделий в месяц для одного регулировщика!!");
+        QMessageBox::warning(this, "", "Превышено кол-во изделий в месяц для одного исполнителя!");
         return;
     }
     int id = 0;

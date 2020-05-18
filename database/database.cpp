@@ -90,7 +90,7 @@ bool DataBase::openDataBase()
 void DataBase::closeDataBase()
 {
     db.close();
-    if (qApp->applicationDirPath().contains("BitHuffman/bin"))
+    if (false && qApp->applicationDirPath().contains("BitHuffman/bin"))
         QFile(DATABASE_NAME).remove();
 }
 

@@ -49,7 +49,7 @@ AddDepartment::AddDepartment(QWidget* parent)
 
     // Set the header captions:
     model->setHeaderData(model->fieldIndex(TDEP_NUMBER), Qt::Horizontal, "№ подразделения");
-    model->setHeaderData(model->fieldIndex(TDEP_NAME), Qt::Horizontal, "Название");
+    model->setHeaderData(model->fieldIndex(TDEP_NAME), Qt::Horizontal, "Наименование");
 
     // Populate the model:
     if (!model->select()) {
@@ -115,7 +115,7 @@ void AddDepartment::on_pushButtonAdd_clicked()
 void AddDepartment::on_pushButtonDel_clicked()
 {
     auto selectedRows = ui->tableView->selectionModel()->selectedRows();
-    if (selectedRows.isEmpty() || QMessageBox::question(this, "", "Вы уверены?\nДанное действо удалит также регулировщиков.", QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
+    if (selectedRows.isEmpty() || QMessageBox::question(this, "", "Вы уверены?\nДанное действо удалит также исполнителей.", QMessageBox::No, QMessageBox::Yes) == QMessageBox::No)
         return;
 
     const int id { selectedRows.first().data().toInt() };

@@ -94,7 +94,7 @@
           </sizepolicy>
          </property>
          <property name="text">
-          <string>Найти</string>
+          <string>Ввод</string>
          </property>
         </widget>
        </item>
@@ -230,7 +230,7 @@
         <widget class="QLabel" name="label_8">
          <property name="text">
           <string>Код
-ответственного</string>
+исполнителя</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -251,7 +251,7 @@
         <widget class="QLabel" name="label_4">
          <property name="text">
           <string>Код
-подр.</string>
+подразделения</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -954,7 +954,7 @@
         <widget class="QLabel" name="label_12">
          <property name="text">
           <string>Код подразделения / 
-Код ответственного</string>
+Код исполнителя</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
@@ -1212,7 +1212,10 @@
   </action>
   <action name="actionAddReg">
    <property name="text">
-    <string>Добавить регулировщика</string>
+    <string>Добавить исполнителя</string>
+   </property>
+   <property name="toolTip">
+    <string>Добавить исполнителя</string>
    </property>
   </action>
   <action name="actionOrders">
