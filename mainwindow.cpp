@@ -28,7 +28,7 @@ public:
         : QSqlRelationalTableModel(parent)
     {
     }
-    virtual ~MySqlRelationalTableModel() override {}
+    virtual ~MySqlRelationalTableModel() override { }
 
     // QAbstractItemModel interface
 public:
@@ -196,7 +196,7 @@ void MainWindow::printDialog()
 {
     QString text;
 
-    auto indexes{ ui->tvOrders->selectionModel()->selectedRows() };
+    auto indexes { ui->tvOrders->selectionModel()->selectedRows() };
     if (indexes.isEmpty()) {
         QMessageBox::information(this, "", "Нет выделенной строки заказа для печати.");
         return;
@@ -242,39 +242,41 @@ void MainWindow::tos()
         const QString sqatres2(date.toString("MMyy"));
         const QString sqatres3(QString::number(numInMonth));
 
-        ui->sbxDepNum->setValue(sqatres1.mid(0, 1).toInt());
+        ui->sbxDepNum->setValue(sqatres1.midRef(0, 1).toInt());
         ui->sbxAdjNum->setValue(adjId);
-        ui->sbxMonth->setValue(sqatres2.mid(0, 2).toInt());
-        ui->sbxYear->setValue(sqatres2.mid(2, 2).toInt());
+        ui->sbxMonth->setValue(sqatres2.midRef(0, 2).toInt());
+        ui->sbxYear->setValue(sqatres2.midRef(2, 2).toInt());
         ui->sbxCtyInMonth->setValue(numInMonth);
     }
 
     for (auto chbx : {
-             ui->sbxBit_1,
-             ui->sbxBit_2,
-             ui->sbxBit_3,
-             ui->sbxBit_4,
-             ui->sbxBit_5,
-             ui->sbxBit_6,
-             ui->sbxBit_7,
-             ui->sbxBit_8,
-             ui->sbxBit_9,
-             ui->sbxBit_10,
-             ui->sbxBit_11,
-             ui->sbxBit_12,
-             ui->sbxBit_13,
-             ui->sbxBit_14,
-             ui->sbxBit_15,
-             ui->sbxBit_16,
-             ui->sbxBit_17,
-             ui->sbxBit_18,
-             ui->sbxBit_19,
-             ui->sbxBit_20,
-             ui->sbxBit_21,
-             ui->sbxBit_22,
-             ui->sbxBit_23,
+             ui->chbxBit1,
+             ui->chbxBit2,
+             ui->chbxBit3,
+             ui->chbxBit4,
+             ui->chbxBit5,
+             ui->chbxBit6,
+             ui->chbxBit7,
+             ui->chbxBit8,
+             ui->chbxBit9,
+             ui->chbxBit10,
+             ui->chbxBit11,
+             ui->chbxBit12,
+             ui->chbxBit13,
+             ui->chbxBit14,
+             ui->chbxBit15,
+             ui->chbxBit16,
+             ui->chbxBit17,
+             ui->chbxBit18,
+             ui->chbxBit19,
+             ui->chbxBit20,
+             ui->chbxBit21,
+             ui->chbxBit22,
+             ui->chbxBit23,
          }) {
-        chbx->setValue(esn & 0x1);
+        chbx->setTristate(true);
+        chbx->setCheckState((esn & 0x1) ? Qt::PartiallyChecked : Qt::Unchecked);
+        chbx->setCheckable(false);
         esn >>= 1;
     }
 }
@@ -324,10 +326,10 @@ void MainWindow::on_pbFind_clicked()
 
 void MainWindow::on_tvOrders_doubleClicked(const QModelIndex& index)
 {
-    auto rec{ modelOrder->record() };
-    QString data{ index.data(Qt::EditRole).toString() };
-    const int column{ index.column() };
-    if (auto r{ modelOrder->relation(column) }; r.isValid()) {
+    auto rec { modelOrder->record() };
+    QString data { index.data(Qt::EditRole).toString() };
+    const int column { index.column() };
+    if (auto r { modelOrder->relation(column) }; r.isValid()) {
         QSqlTableModel m;
         m.setTable(modelOrder->tableName());
         modelOrder->setFilter(QString("%1 IN(SELECT %2 FROM %3 WHERE %4 = '%5')")
@@ -372,8 +374,8 @@ void MainWindow::showOrders()
     tv->setModel(m);
 
     connect(tv, &QTableView::doubleClicked, [m](const QModelIndex& index) {
-        auto r{ m->record() };
-        QString data{ index.data().toString() };
+        auto r { m->record() };
+        QString data { index.data().toString() };
         m->setFilter(QString("%1='%2'").arg(r.fieldName(index.column())).arg(data));
         m->select();
     });

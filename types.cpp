@@ -18,7 +18,7 @@ typedef union {
         unsigned : 9; // regId << OffsetRegul;
     };
     struct {
-        int32_t csn;
+        uint32_t csn;
     };
 } SN;
 
@@ -26,8 +26,8 @@ typedef union {
 
 Regul::Regul()
     : id(-1)
-    , department{}
-    , name{}
+    , department {}
+    , name {}
 {
 }
 
@@ -53,7 +53,7 @@ void Regul::load(QComboBox* cbx)
         QSet<int> regSet;
         int index = 0;
         while (!in.atEnd()) {
-            Regul::regul[index] = Regul{ in.readLine().split(';', QString::SkipEmptyParts) };
+            Regul::regul[index] = Regul { in.readLine().split(';', QString::SkipEmptyParts) };
             Regul::revRegul[Regul::regul[index].id] = index;
             cbx->addItem(Regul::regul[index].name);
             if (!regSet.contains(Regul::regul.last().id)) {
@@ -82,7 +82,7 @@ int Regul::toIndex(int id) { return revRegul[id]; }
 
 ////////////////////////////////////////////////////////////////////
 
-Record::Record() {}
+Record::Record() { }
 
 Record::Record(const Regul& regul, const QDate& date, int sernum, int count, int order, const QDate& orderDate)
     : m_regul(regul)
@@ -109,7 +109,7 @@ std::tuple<int, QDate, int> Record::fromSerNum(int raw)
 {
     SN sn;
     sn.csn = raw;
-    return { static_cast<int>(sn.reg), QDate{ static_cast<int>(sn.dat / 12 + 2020), static_cast<int>(sn.dat % 12 + 1), 1 }, static_cast<int>(sn.ser + 1) };
+    return { static_cast<int>(sn.reg), QDate { static_cast<int>(sn.dat / 12 + 2020), static_cast<int>(sn.dat % 12 + 1), 1 }, static_cast<int>(sn.ser + 1) };
 }
 
 QString Record::sernums() const
@@ -137,7 +137,7 @@ QVector<int> Record::encodedSernumsV() const
     for (int sn = 0; sn < m_count; ++sn) {
         sernums << toSerNum(m_regul.id, m_date, m_sernum + sn);
     }
-    std::sort(sernums.begin(),sernums.end());
+    std::sort(sernums.begin(), sernums.end());
     return sernums;
 }
 
